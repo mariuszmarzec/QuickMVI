@@ -11,7 +11,7 @@ buildscript {
     }
 }
 
-group = "me.mariu"
+group = "com.marzec"
 version = "1.0"
 
 allprojects {

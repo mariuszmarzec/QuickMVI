@@ -1,6 +1,6 @@
-package me.mariu.android
+package com.marzec.android
 
-import me.mariu.common.App
+import com.marzec.common.App
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity

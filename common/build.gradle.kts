@@ -6,7 +6,7 @@ plugins {
     id("com.android.library")
 }
 
-group = "me.mariu"
+group = "com.marzec"
 version = "1.0"
 
 kotlin {

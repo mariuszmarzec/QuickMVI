@@ -1,4 +1,4 @@
-package me.mariu.common
+package com.marzec.common
 
 import androidx.compose.material.Text
 import androidx.compose.material.Button
@@ -13,7 +13,7 @@ fun App() {
     var text by remember { mutableStateOf("Hello, World!") }
 
     Button(onClick = {
-        text = "Hello, ${getPlatformName()}"
+        text = "Hello"
     }) {
         Text(text)
     }
