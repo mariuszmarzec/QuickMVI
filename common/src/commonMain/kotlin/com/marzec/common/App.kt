@@ -5,18 +5,96 @@ import androidx.compose.material.Button
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.marzec.mvi.Store2
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
+
+data class TimersState(
+    val slow: Float = 0f,
+    val medium: Float = 0f,
+    val quick: Float = 0f
+)
 
 @Composable
 fun App() {
 
-    ProgressRun(
-        progress = 0.6f,
-        onStartButtonClick = { }
-    )
+    val store = TimersStore(rememberCoroutineScope())
+
+    val state by store.state.collectAsState()
+
+    Column {
+
+        ProgressRun(
+            progress = state.slow,
+            onStartButtonClick = { store.startSlowTimer() }
+        )
+        ProgressRun(
+            progress = state.medium,
+            onStartButtonClick = { store.startMediumTimer() }
+        )
+        ProgressRun(
+            progress = state.quick,
+            onStartButtonClick = { store.startQuickTimer() }
+        )
+    }
+}
+
+class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersState()) {
+
+    fun startSlowTimer() = intent<Float> {
+        onTrigger {
+            val timeInMillis: Long = 10 * 1000
+            flow {
+                val maxValue = 1f
+                val timeBetweenEmissions = 100L
+                val step = maxValue / timeInMillis / timeBetweenEmissions
+                var progress = 0f
+                do {
+                    emit(progress)
+                    progress = progress.plus(step).let {
+                        if (it > maxValue) {
+                            maxValue
+                        } else {
+                            it
+                        }
+                    }
+                    delay(timeBetweenEmissions)
+                } while (progress < maxValue)
+            }
+        }
+
+        reducer {
+            state.copy(slow = resultNonNull())
+        }
+    }
+
+    fun startMediumTimer() = intent<Float> {
+        onTrigger {
+            null
+        }
+
+        reducer {
+            state.copy(medium = resultNonNull())
+        }
+    }
+
+    fun startQuickTimer() = intent<Float> {
+        onTrigger {
+            null
+        }
+
+        reducer {
+            state.copy(quick = resultNonNull())
+        }
+    }
 }
 
 @Composable
