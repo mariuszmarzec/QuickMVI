@@ -16,6 +16,7 @@ import com.marzec.mvi.Store2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
+import androidx.compose.runtime.LaunchedEffect
 
 data class TimersState(
     val slow: Float = 0f,
@@ -26,9 +27,19 @@ data class TimersState(
 @Composable
 fun App() {
 
-    val store = TimersStore(rememberCoroutineScope())
+    val scope = rememberCoroutineScope()
+    val store = TimersStore(scope)
 
+    Screen(store)
+}
+
+@Composable
+private fun Screen(store: TimersStore) {
     val state by store.state.collectAsState()
+
+    LaunchedEffect(key1 = Unit) {
+        store.init()
+    }
 
     Column {
 
@@ -51,24 +62,7 @@ class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersStat
 
     fun startSlowTimer() = intent<Float> {
         onTrigger {
-            val timeInMillis: Long = 10 * 1000
-            flow {
-                val maxValue = 1f
-                val timeBetweenEmissions = 100L
-                val step = maxValue / timeInMillis / timeBetweenEmissions
-                var progress = 0f
-                do {
-                    emit(progress)
-                    progress = progress.plus(step).let {
-                        if (it > maxValue) {
-                            maxValue
-                        } else {
-                            it
-                        }
-                    }
-                    delay(timeBetweenEmissions)
-                } while (progress < maxValue)
-            }
+            timer(timeInMillis = 10 * 1000)
         }
 
         reducer {
@@ -78,7 +72,7 @@ class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersStat
 
     fun startMediumTimer() = intent<Float> {
         onTrigger {
-            null
+            timer(timeInMillis = 5 * 1000)
         }
 
         reducer {
@@ -88,7 +82,7 @@ class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersStat
 
     fun startQuickTimer() = intent<Float> {
         onTrigger {
-            null
+            timer(timeInMillis = 3 * 1000)
         }
 
         reducer {
@@ -119,4 +113,23 @@ fun ProgressRun(
             )
         }
     }
+}
+
+private fun timer(timeInMillis: Long) = flow {
+    val maxValue = 1f
+    val timeBetweenEmissions = 100L
+    val step = maxValue / (timeInMillis / timeBetweenEmissions)
+    var progress = 0f
+    do {
+        emit(progress)
+        progress = progress.plus(step).let {
+            if (it >= maxValue) {
+                maxValue
+            } else {
+                it
+            }
+        }
+        delay(timeBetweenEmissions)
+    } while (progress <= maxValue)
+    println(progress)
 }
