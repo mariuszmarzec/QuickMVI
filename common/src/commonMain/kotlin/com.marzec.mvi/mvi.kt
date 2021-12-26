@@ -2,6 +2,7 @@ package com.marzec.mvi
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,10 +23,11 @@ open class Store2<State : Any>(
     private val defaultState: State
 ) {
 
-    private val actions =
-        MutableSharedFlow<Intent2<State, Any>>(extraBufferCapacity = 10)
     private val _intentContextFlow =
-        MutableStateFlow<Intent2<State, Any>>(Intent2(state = defaultState, result = null))
+        MutableSharedFlow<Intent2<State, Any>>(
+            extraBufferCapacity = 30,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private var _state = MutableStateFlow(defaultState)
 
@@ -38,32 +40,32 @@ open class Store2<State : Any>(
 
     suspend fun init(initialAction: suspend () -> Unit = {}) {
         pause.emit(false)
-        scope.launch {
-            actions.onSubscription { initialAction() }
-                .flatMapMerge { intent ->
-                    debug("actions flatMapMerge intent: $intent")
-                    val currentState = _state.value
-                    val flow = intent.onTrigger(currentState) ?: flowOf(null)
-                    flow.map {
-                        debug("actions onTrigger state: ${intent.state} result: $it")
-                        intent.copy(
-                            state = currentState,
-                            result = it,
-                            sideEffect = intent.sideEffect
-                        )
-                    }.makeCancellableIfNeeded(intent.isCancellableFlowTrigger)
-                }.collect {
-                    debug("actions collect intent: $it")
-                    _intentContextFlow.emit(it)
-                }
-        }
+//        scope.launch {
+//            actions.onSubscription { initialAction() }
+//                .flatMapMerge { intent ->
+//                    debug("actions flatMapMerge intent: $intent")
+//                    val currentState = _state.value
+//                    val flow = intent.onTrigger(currentState) ?: flowOf(null)
+//                    flow.map {
+//                        debug("actions onTrigger state: ${intent.state} result: $it")
+//                        intent.copy(
+//                            state = _state.value,
+//                            result = it,
+//                            sideEffect = intent.sideEffect
+//                        )
+//                    }.makeCancellableIfNeeded(intent.isCancellableFlowTrigger)
+//                }.collect {
+//                    debug("actions collect intent: $it")
+//                    _intentContextFlow.emit(it)
+//                }
+//        }
         scope.launch {
             _intentContextFlow
                 .runningReduce { old, new ->
                     val reducedState = if (!new.paused) {
                         new.reducer(new.result, old.state!!)
                     } else {
-                        old.state!!
+                        old.state
                     }
                     debug("_intentContextFlow runningReduce state: $reducedState")
                     old.copy(
@@ -86,6 +88,8 @@ open class Store2<State : Any>(
                     _state.emit(it.state!!)
                 }
         }
+
+        _intentContextFlow.emit(Intent2(state = defaultState, result = null))
     }
 
     private fun Flow<Intent2<State, Any>>.makeCancellableIfNeeded(
@@ -113,14 +117,26 @@ open class Store2<State : Any>(
 
     fun <Result : Any> intent(buildFun: IntentBuilder<State, Result>.() -> Unit) {
         scope.launch {
-            actions.emit(IntentBuilder<State, Result>().apply { buildFun() }.build())
+            val intent = IntentBuilder<State, Result>().apply { buildFun() }.build()
+
+            val flow = intent.onTrigger(_state.value) ?: flowOf(null)
+            flow.collect {
+                _intentContextFlow.emit(
+                    intent.copy(
+                        state = _state.value,
+                        result = it,
+                        sideEffect = intent.sideEffect
+                    )
+                )
+            }
         }
     }
 
     fun sideEffectIntent(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> Unit) {
-        scope.launch {
-            actions.emit(IntentBuilder<State, Unit>().apply { sideEffect(func) }.build())
-        }
+// TODO
+//        scope.launch {
+//            actions.emit(IntentBuilder<State, Unit>().apply { sideEffect(func) }.build())
+//        }
     }
 
     open suspend fun onNewState(newState: State) = Unit

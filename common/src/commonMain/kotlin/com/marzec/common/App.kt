@@ -88,6 +88,15 @@ class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersStat
         reducer {
             state.copy(quick = resultNonNull())
         }
+
+
+    }
+
+    var i = 0
+
+    override suspend fun onNewState(newState: TimersState) {
+        println("NEW STATE: $i $newState")
+        i = i.inc()
     }
 }
 
@@ -120,8 +129,9 @@ private fun timer(timeInMillis: Long) = flow {
     val timeBetweenEmissions = 100L
     val step = maxValue / (timeInMillis / timeBetweenEmissions)
     var progress = 0f
-    do {
-        emit(progress)
+    emit(progress)
+    while (progress < maxValue) {
+        delay(timeBetweenEmissions)
         progress = progress.plus(step).let {
             if (it >= maxValue) {
                 maxValue
@@ -129,7 +139,6 @@ private fun timer(timeInMillis: Long) = flow {
                 it
             }
         }
-        delay(timeBetweenEmissions)
-    } while (progress <= maxValue)
-    println(progress)
+        emit(progress)
+    }
 }
