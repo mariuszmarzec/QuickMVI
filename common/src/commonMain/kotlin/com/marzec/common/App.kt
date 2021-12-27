@@ -60,7 +60,7 @@ private fun Screen(store: TimersStore) {
 
 class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersState()) {
 
-    fun startSlowTimer() = intent<Float> {
+    fun startSlowTimer() = intent<Float>("slow timer") {
         onTrigger {
             timer(timeInMillis = 10 * 1000)
         }

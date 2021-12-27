@@ -1,21 +1,9 @@
 package com.marzec.mvi
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapMerge
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onSubscription
-import kotlinx.coroutines.flow.runningReduce
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.*
+import kotlin.random.Random
 
 @ExperimentalCoroutinesApi
 open class Store2<State : Any>(
@@ -38,27 +26,10 @@ open class Store2<State : Any>(
 
     private var pause = MutableStateFlow(false)
 
+    private val jobs = hashMapOf<String, Pair<Long, Job>>()
+
     suspend fun init(initialAction: suspend () -> Unit = {}) {
         pause.emit(false)
-//        scope.launch {
-//            actions.onSubscription { initialAction() }
-//                .flatMapMerge { intent ->
-//                    debug("actions flatMapMerge intent: $intent")
-//                    val currentState = _state.value
-//                    val flow = intent.onTrigger(currentState) ?: flowOf(null)
-//                    flow.map {
-//                        debug("actions onTrigger state: ${intent.state} result: $it")
-//                        intent.copy(
-//                            state = _state.value,
-//                            result = it,
-//                            sideEffect = intent.sideEffect
-//                        )
-//                    }.makeCancellableIfNeeded(intent.isCancellableFlowTrigger)
-//                }.collect {
-//                    debug("actions collect intent: $it")
-//                    _intentContextFlow.emit(it)
-//                }
-//        }
         scope.launch {
             _intentContextFlow
                 .runningReduce { old, new ->
@@ -67,7 +38,6 @@ open class Store2<State : Any>(
                     } else {
                         old.state
                     }
-                    debug("_intentContextFlow runningReduce state: $reducedState")
                     old.copy(
                         state = reducedState,
                         result = new.result,
@@ -77,14 +47,12 @@ open class Store2<State : Any>(
                         runSideEffectAfterCancel = new.runSideEffectAfterCancel
                     )
                 }.onEach {
-                    debug("_intentContextFlow onEach intent: $it")
                     onNewState(it.state!!)
-
                     if (!it.paused || it.runSideEffectAfterCancel) {
                         it.sideEffect?.invoke(it.result, it.state)
                     }
                 }.collect {
-                    debug("_intentContextFlow collect state: ${it.state}")
+                    println("jobs: ${jobs.size}")
                     _state.emit(it.state!!)
                 }
         }
@@ -115,21 +83,10 @@ open class Store2<State : Any>(
         }
     }
 
-    fun <Result : Any> intent(buildFun: IntentBuilder<State, Result>.() -> Unit) {
-        scope.launch {
-            val intent = IntentBuilder<State, Result>().apply { buildFun() }.build()
+    open suspend fun onNewState(newState: State) = Unit
 
-            val flow = intent.onTrigger(_state.value) ?: flowOf(null)
-            flow.collect {
-                _intentContextFlow.emit(
-                    intent.copy(
-                        state = _state.value,
-                        result = it,
-                        sideEffect = intent.sideEffect
-                    )
-                )
-            }
-        }
+    fun <Result : Any> intent(id: String = "", buildFun: IntentBuilder<State, Result>.() -> Unit) {
+        intentInternal(id, buildFun)
     }
 
     fun sideEffectIntent(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> Unit) {
@@ -139,11 +96,35 @@ open class Store2<State : Any>(
 //        }
     }
 
-    open suspend fun onNewState(newState: State) = Unit
+    private fun <Result : Any> intentInternal(id: String = "", buildFun: IntentBuilder<State, Result>.() -> Unit) {
+        jobs[id]?.second?.cancel()
 
-    fun debug(string: String) {
-        if (false) {
-            println("MVI-${defaultState.javaClass.simpleName} $string")
+        val identifier = Random.nextLong()
+        val job = launchNewJob(buildFun)
+        if (id.isNotEmpty()) {
+            job.invokeOnCompletion {
+                if (jobs[id]?.first == identifier) {
+                    jobs.remove(id)
+                }
+            }
+            if (job.isActive) {
+                jobs[id] = identifier to job
+            }
+        }
+    }
+
+    private fun <Result : Any> launchNewJob(buildFun: IntentBuilder<State, Result>.() -> Unit): Job = scope.launch {
+        val intent = IntentBuilder<State, Result>().apply { buildFun() }.build()
+
+        val flow = intent.onTrigger(_state.value) ?: flowOf(null)
+        flow.collect {
+            _intentContextFlow.emit(
+                intent.copy(
+                    state = _state.value,
+                    result = it,
+                    sideEffect = intent.sideEffect
+                )
+            )
         }
     }
 }
