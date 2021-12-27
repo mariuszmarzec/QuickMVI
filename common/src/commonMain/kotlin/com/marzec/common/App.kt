@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.marzec.mvi.Store3
+import com.marzec.mvi.collectState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
@@ -17,7 +18,8 @@ import kotlinx.coroutines.flow.flow
 data class TimersState(
     val slow: Float = 0f,
     val medium: Float = 0f,
-    val quick: Float = 0f
+    val quick: Float = 0f,
+    val initiallyStarted: Float = 0f
 )
 
 @Composable
@@ -31,10 +33,8 @@ fun App() {
 
 @Composable
 private fun Screen(store: TimersStore) {
-    val state by store.state.collectAsState()
-
-    LaunchedEffect(key1 = Unit) {
-        store.init()
+    val state by store.collectState {
+        store.initialTimer()
     }
 
     Column {
@@ -51,12 +51,26 @@ private fun Screen(store: TimersStore) {
             progress = state.quick,
             onStartButtonClick = { store.startQuickTimer() }
         )
-        Button(
-            modifier = Modifier.padding(16.dp),
-            onClick = {
-            store.cancel()
-        }) {
-            Text("Cancel")
+
+        Text(
+            text = "Timer started with program: ${String.format("%.3f", state.initiallyStarted)}",
+            modifier = Modifier.padding(16.dp)
+        )
+
+        Row(modifier = Modifier.padding(16.dp)) {
+            Button(
+                onClick = {
+                    store.cancel()
+                }) {
+                Text("Cancel")
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Button(
+                onClick = {
+                    store.startAll()
+                }) {
+                Text("Start All")
+            }
         }
     }
 }
@@ -126,6 +140,31 @@ class TimersStore(scope: CoroutineScope) : Store3<TimersState>(scope, TimersStat
             INTENT_MEDIUM_TIMER_ID,
             INTENT_QUICK_TIMER_ID
         )
+    }
+
+    fun startAll() = sideEffectIntent {
+        startSlowTimer()
+        startMediumTimer()
+        startQuickTimer()
+    }
+
+    fun initialTimer() = intent<TimerEvent> {
+        onTrigger {
+            timer(timeInMillis = 100 * 1000)
+        }
+
+        reducer {
+            when (val timer = resultNonNull()) {
+                TimerEvent.Done -> state
+                is TimerEvent.Progress -> state.copy(initiallyStarted = timer.value)
+            }
+        }
+
+        sideEffect {
+            if (resultNonNull() is TimerEvent.Done) {
+                println("INITIALLY STARTED FINISHED")
+            }
+        }
     }
 
     companion object {

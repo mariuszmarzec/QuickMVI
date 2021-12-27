@@ -1,8 +1,13 @@
 package com.marzec.mvi
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.random.Random
 
 @ExperimentalCoroutinesApi
@@ -32,6 +37,7 @@ open class Store3<State : Any>(
         pause.emit(false)
         scope.launch {
             _intentContextFlow
+                .onSubscription { initialAction() }
                 .runningReduce { old, new ->
                     val reducedState = new.reducer(new.result, old.state!!)
                     old.copy(
@@ -182,3 +188,18 @@ fun <State : Any, Result : Any> Intent3<State, Result>.rebuild(
         reducer = reducer,
         sideEffect = sideEffect
     ).apply { buildFun(this@rebuild) }.build()
+
+@Composable
+fun <T: Any> Store3<T>.collectState(
+    context: CoroutineContext = EmptyCoroutineContext,
+    onStoreInitAction: suspend () -> Unit = { }
+): androidx.compose.runtime.State<T> {
+
+    val state = state.collectAsState(state.value, context)
+    LaunchedEffect(key1 = identifier) {
+        init {
+            onStoreInitAction()
+        }
+    }
+    return state
+}
