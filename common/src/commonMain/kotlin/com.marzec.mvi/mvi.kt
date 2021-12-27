@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.*
 import kotlin.random.Random
 
 @ExperimentalCoroutinesApi
-open class Store2<State : Any>(
+open class Store3<State : Any>(
     private val scope: CoroutineScope,
     private val defaultState: State
 ) {

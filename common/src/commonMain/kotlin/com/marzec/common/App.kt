@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.marzec.mvi.Store2
+import com.marzec.mvi.Store3
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
@@ -58,7 +58,7 @@ private fun Screen(store: TimersStore) {
     }
 }
 
-class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersState()) {
+class TimersStore(scope: CoroutineScope) : Store3<TimersState>(scope, TimersState()) {
 
     fun startSlowTimer() = intent<Float>("slow timer") {
         onTrigger {
@@ -70,7 +70,7 @@ class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersStat
         }
     }
 
-    fun startMediumTimer() = intent<Float> {
+    fun startMediumTimer() = intent<Float>("medium timer") {
         onTrigger {
             timer(timeInMillis = 5 * 1000)
         }
@@ -80,7 +80,7 @@ class TimersStore(scope: CoroutineScope) : Store2<TimersState>(scope, TimersStat
         }
     }
 
-    fun startQuickTimer() = intent<Float> {
+    fun startQuickTimer() = intent<Float>("quick timer") {
         onTrigger {
             timer(timeInMillis = 3 * 1000)
         }
