@@ -4,10 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,7 +13,6 @@ import com.marzec.mvi.Store3
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
-import androidx.compose.runtime.LaunchedEffect
 
 data class TimersState(
     val slow: Float = 0f,
@@ -55,49 +51,93 @@ private fun Screen(store: TimersStore) {
             progress = state.quick,
             onStartButtonClick = { store.startQuickTimer() }
         )
+        Button(
+            modifier = Modifier.padding(16.dp),
+            onClick = {
+            store.cancel()
+        }) {
+            Text("Cancel")
+        }
     }
 }
 
 class TimersStore(scope: CoroutineScope) : Store3<TimersState>(scope, TimersState()) {
 
-    fun startSlowTimer() = intent<Float>("slow timer") {
+    fun startSlowTimer() = intent<TimerEvent>(INTENT_SLOW_TIMER_ID) {
         onTrigger {
             timer(timeInMillis = 10 * 1000)
         }
 
         reducer {
-            state.copy(slow = resultNonNull())
+            when (val timer = resultNonNull()) {
+                TimerEvent.Done -> state
+                is TimerEvent.Progress -> state.copy(slow = timer.value)
+            }
+        }
+
+        sideEffect {
+            if (resultNonNull() is TimerEvent.Done) {
+                println("SLOW FINISHED")
+            }
         }
     }
 
-    fun startMediumTimer() = intent<Float>("medium timer") {
+    fun startMediumTimer() = intent<TimerEvent>(INTENT_MEDIUM_TIMER_ID) {
         onTrigger {
             timer(timeInMillis = 5 * 1000)
         }
 
         reducer {
-            state.copy(medium = resultNonNull())
+            when (val timer = resultNonNull()) {
+                TimerEvent.Done -> state
+                is TimerEvent.Progress -> state.copy(medium = timer.value)
+            }
+        }
+
+        sideEffect {
+            if (resultNonNull() is TimerEvent.Done) {
+                println("MEDIUM FINISHED")
+            }
         }
     }
 
-    fun startQuickTimer() = intent<Float>("quick timer") {
+    fun startQuickTimer() = intent<TimerEvent>(INTENT_QUICK_TIMER_ID) {
         onTrigger {
             timer(timeInMillis = 3 * 1000)
         }
 
         reducer {
-            state.copy(quick = resultNonNull())
+            when (val timer = resultNonNull()) {
+                TimerEvent.Done -> state
+                is TimerEvent.Progress -> state.copy(quick = timer.value)
+            }
         }
 
-
+        sideEffect {
+            if (resultNonNull() is TimerEvent.Done) {
+                println("QUICK FINISHED")
+            }
+        }
     }
 
-    var i = 0
-
-    override suspend fun onNewState(newState: TimersState) {
-        println("NEW STATE: $i $newState")
-        i = i.inc()
+    fun cancel() = sideEffectIntent {
+        cancel(
+            INTENT_SLOW_TIMER_ID,
+            INTENT_MEDIUM_TIMER_ID,
+            INTENT_QUICK_TIMER_ID
+        )
     }
+
+    companion object {
+        private const val INTENT_SLOW_TIMER_ID = "slow timer"
+        private const val INTENT_MEDIUM_TIMER_ID = "medium timer"
+        private const val INTENT_QUICK_TIMER_ID = "quick timer"
+    }
+}
+
+sealed class TimerEvent {
+    class Progress(val value: Float) : TimerEvent()
+    object Done : TimerEvent()
 }
 
 @Composable
@@ -129,7 +169,7 @@ private fun timer(timeInMillis: Long) = flow {
     val timeBetweenEmissions = 100L
     val step = maxValue / (timeInMillis / timeBetweenEmissions)
     var progress = 0f
-    emit(progress)
+    emit(TimerEvent.Progress(progress))
     while (progress < maxValue) {
         delay(timeBetweenEmissions)
         progress = progress.plus(step).let {
@@ -139,6 +179,7 @@ private fun timer(timeInMillis: Long) = flow {
                 it
             }
         }
-        emit(progress)
+        emit(TimerEvent.Progress(progress))
     }
+    emit(TimerEvent.Done)
 }
