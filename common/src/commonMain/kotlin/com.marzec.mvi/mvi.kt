@@ -28,13 +28,10 @@ open class Store3<State : Any>(
         get() = _state
 
     open val identifier: Any = Unit
-
-    private var pause = MutableStateFlow(false)
-
+    
     private val jobs = hashMapOf<String, IntentJob<State, Any>>()
 
     suspend fun init(initialAction: suspend () -> Unit = {}) {
-        pause.emit(false)
         scope.launch {
             _intentContextFlow
                 .onSubscription { initialAction() }

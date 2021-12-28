@@ -27,6 +27,10 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(kotlin("test-common"))
+                implementation(kotlin("test-annotations-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0")
+                implementation("io.mockk:mockk-common:1.10.6")
             }
         }
         val androidMain by getting {
@@ -45,7 +49,11 @@ kotlin {
                 api(compose.preview)
             }
         }
-        val desktopTest by getting
+        val desktopTest by getting {
+            dependencies {
+                implementation("io.mockk:mockk:1.10.6")
+            }
+        }
     }
 }
 
