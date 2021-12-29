@@ -34,8 +34,12 @@ open class Store3<State : Any>(
     suspend fun init(initialAction: suspend () -> Unit = {}) {
         scope.launch {
             _intentContextFlow
-                .onSubscription { initialAction() }
+                .onSubscription {
+                    _intentContextFlow.emit(Intent3(state = defaultState, result = null))
+                    initialAction()
+                }
                 .runningReduce { old, new ->
+                    println("REDUCE: " + new)
                     val reducedState = new.reducer(new.result, old.state!!)
                     old.copy(
                         state = reducedState,
@@ -44,13 +48,12 @@ open class Store3<State : Any>(
                     )
                 }.onEach {
                     onNewState(it.state!!)
+                    println("STATE: " + it.state!!)
                     it.sideEffect?.invoke(it.result, it.state)
                 }.collect {
                     _state.emit(it.state!!)
                 }
         }
-
-        _intentContextFlow.emit(Intent3(state = defaultState, result = null))
     }
 
     protected fun <T> Flow<T>.cancelFlowsIf(function: (T) -> Boolean): Flow<T> =
@@ -96,6 +99,7 @@ open class Store3<State : Any>(
     private fun <Result : Any> launchNewJob(intent: Intent3<State, Result>): Job = scope.launch {
         val flow = intent.onTrigger(_state.value) ?: flowOf(null)
         flow.collect {
+            println("RESULT: $it")
             _intentContextFlow.emit(
                 intent.copy(
                     state = _state.value,
