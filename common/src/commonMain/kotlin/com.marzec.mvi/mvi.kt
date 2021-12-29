@@ -39,7 +39,6 @@ open class Store3<State : Any>(
                     initialAction()
                 }
                 .runningReduce { old, new ->
-                    println("REDUCE: " + new)
                     val reducedState = new.reducer(new.result, old.state!!)
                     old.copy(
                         state = reducedState,
@@ -48,7 +47,6 @@ open class Store3<State : Any>(
                     )
                 }.onEach {
                     onNewState(it.state!!)
-                    println("STATE: " + it.state!!)
                     it.sideEffect?.invoke(it.result, it.state)
                 }.collect {
                     _state.emit(it.state!!)
@@ -99,7 +97,6 @@ open class Store3<State : Any>(
     private fun <Result : Any> launchNewJob(intent: Intent3<State, Result>): Job = scope.launch {
         val flow = intent.onTrigger(_state.value) ?: flowOf(null)
         flow.collect {
-            println("RESULT: $it")
             _intentContextFlow.emit(
                 intent.copy(
                     state = _state.value,
