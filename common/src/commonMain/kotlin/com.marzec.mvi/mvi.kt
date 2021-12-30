@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTypeInference::class)
+
 package com.marzec.mvi
 
 import androidx.compose.runtime.Composable
@@ -8,6 +10,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.experimental.ExperimentalTypeInference
 import kotlin.random.Random
 
 @ExperimentalCoroutinesApi
@@ -28,7 +31,7 @@ open class Store3<State : Any>(
         get() = _state
 
     open val identifier: Any = Unit
-    
+
     private val jobs = hashMapOf<String, IntentJob<State, Any>>()
 
     suspend fun init(initialAction: suspend () -> Unit = {}) {
@@ -67,8 +70,16 @@ open class Store3<State : Any>(
 
     open suspend fun onNewState(newState: State) = Unit
 
-    fun <Result : Any> intent(id: String = "", buildFun: IntentBuilder<State, Result>.() -> Unit) {
+    fun <Result : Any> intent(id: String = "", @BuilderInference buildFun: IntentBuilder<State, Result>.() -> Unit) {
         intentInternal(id, buildFun)
+    }
+
+    fun <Result : Any> triggerIntent(func: suspend IntentBuilder.IntentContext<State, Result>.() -> Flow<Result>?) {
+        intentInternal<Result> { onTrigger(func) }
+    }
+
+    fun reducerIntent(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> State) {
+        intentInternal<Unit> { reducer(func) }
     }
 
     fun sideEffectIntent(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> Unit) {

@@ -33,7 +33,7 @@ class Store3Test {
     fun `checks if trigger, reducer and side effect are called`() = runStoreTest(dispatcher, 0) {
         val func = mockk<suspend IntentBuilder.IntentContext<Int, Int>.() -> Unit>(relaxed = true)
 
-        store.intent<Int> {
+        store.intent {
             onTrigger { flowOf(1) }
 
             reducer { resultNonNull() }
@@ -43,7 +43,7 @@ class Store3Test {
 
         testScope.advanceUntilIdle()
 
-        store.intent<Int> {
+        store.intent {
             onTrigger { flowOf(2) }
 
             reducer { resultNonNull() }
@@ -57,7 +57,7 @@ class Store3Test {
 
     @Test
     fun `checks calling second time intent with id, kills previous one`() = runStoreTest(dispatcher, 0) {
-        store.intent<Int>("id") {
+        store.intent("id") {
             onTrigger {
                 flow {
                     delay(1000)
@@ -72,7 +72,7 @@ class Store3Test {
 
         testScope.advanceTimeBy(1100)
 
-        store.intent<Int>("id") {
+        store.intent("id") {
             onTrigger { flowOf(2) }
 
             reducer { resultNonNull() }
@@ -87,9 +87,7 @@ class Store3Test {
 
         store.sideEffectIntent {
 
-            store.intent<Unit> {
-                reducer { 1 }
-            }
+            store.reducerIntent { 1 }
 
             testScope.advanceUntilIdle()
 
