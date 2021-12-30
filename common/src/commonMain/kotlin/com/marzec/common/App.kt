@@ -134,7 +134,7 @@ class TimersStore(scope: CoroutineScope) : Store3<TimersState>(scope, TimersStat
         }
     }
 
-    fun cancel() = sideEffectIntent {
+    fun cancel() = sideEffect {
         cancel(
             INTENT_SLOW_TIMER_ID,
             INTENT_MEDIUM_TIMER_ID,
@@ -142,30 +142,26 @@ class TimersStore(scope: CoroutineScope) : Store3<TimersState>(scope, TimersStat
         )
     }
 
-    fun startAll() = sideEffectIntent {
+    fun startAll() = sideEffect {
         startSlowTimer()
         startMediumTimer()
         startQuickTimer()
     }
 
-    fun initialTimer() = intent<TimerEvent> {
+    fun initialTimer() = intent(
         onTrigger {
             timer(timeInMillis = 100 * 1000)
-        }
-
-        reducer {
+        }.reducer {
             when (val timer = resultNonNull()) {
                 TimerEvent.Done -> state
                 is TimerEvent.Progress -> state.copy(initiallyStarted = timer.value)
             }
-        }
-
-        sideEffect {
+        }.sideEffect {
             if (resultNonNull() is TimerEvent.Done) {
                 println("INITIALLY STARTED FINISHED")
             }
         }
-    }
+    )
 
     companion object {
         private const val INTENT_SLOW_TIMER_ID = "slow timer"

@@ -85,7 +85,7 @@ class Store3Test {
     @Test
     fun `checks if running few intents in side effect works`() = runStoreTest(dispatcher, 0) {
 
-        store.sideEffectIntent {
+        store.sideEffect {
 
             store.reducerIntent { 1 }
 

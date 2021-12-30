@@ -74,23 +74,50 @@ open class Store3<State : Any>(
         intentInternal(id, buildFun)
     }
 
+    fun <Result : Any> intent(@BuilderInference buildFun: IntentBuilder<State, Result>.() -> Unit) {
+        intentInternal("", buildFun)
+    }
+
+    fun <Result : Any> intent(id: String = "", builder: IntentBuilder<State, Result>) {
+        intentInternal(id, builder)
+    }
+
+    fun <Result : Any> intent(builder: IntentBuilder<State, Result>) {
+        intentInternal("", builder)
+    }
+
     fun <Result : Any> triggerIntent(func: suspend IntentBuilder.IntentContext<State, Result>.() -> Flow<Result>?) {
         intentInternal<Result> { onTrigger(func) }
+    }
+
+    fun <Result : Any> onTrigger(
+        @BuilderInference func: suspend IntentBuilder.IntentContext<State, Result>.() -> Flow<Result>? = { null }
+    ): IntentBuilder<State, Result> {
+        return IntentBuilder<State, Result>().apply { onTrigger(func) }
     }
 
     fun reducerIntent(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> State) {
         intentInternal<Unit> { reducer(func) }
     }
 
-    fun sideEffectIntent(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> Unit) {
+    fun reduce(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> State): IntentBuilder<State, Unit> {
+        return IntentBuilder<State, Unit>().apply { reducer(func) }
+    }
+
+    fun sideEffect(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> Unit) {
         intentInternal<Unit> { sideEffect(func) }
     }
 
     private fun <Result : Any> intentInternal(id: String = "", buildFun: IntentBuilder<State, Result>.() -> Unit) {
+        val builder = IntentBuilder<State, Result>().apply { buildFun() }
+        intentInternal(id, builder)
+    }
+
+    private fun <Result : Any> intentInternal(id: String = "", builder: IntentBuilder<State, Result>) {
         jobs[id]?.cancelJob()
 
         val identifier = Random.nextLong()
-        val intent = IntentBuilder<State, Result>().apply { buildFun() }.build()
+        val intent = builder.build()
         val job = launchNewJob(intent)
 
         if (id.isNotEmpty()) {
@@ -199,7 +226,7 @@ fun <State : Any, Result : Any> Intent3<State, Result>.rebuild(
     ).apply { buildFun(this@rebuild) }.build()
 
 @Composable
-fun <T: Any> Store3<T>.collectState(
+fun <T : Any> Store3<T>.collectState(
     context: CoroutineContext = EmptyCoroutineContext,
     onStoreInitAction: suspend () -> Unit = { }
 ): androidx.compose.runtime.State<T> {
