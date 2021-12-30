@@ -97,5 +97,5 @@ You can also cancel actions with method `fun cancel(vararg ids: String)` as belo
 ```
 
 For more use cases check:
- - Timers' code [App.kt](common/src/commonMain/kotlin/com.marzec.common/App.kt)
+ - Timers' code [App.kt](common/src/commonMain/kotlin/com/marzec/common/App.kt)
  - Test cases code [Store3Test.kt](common/src/commonTest/kotlin/com/marzec/mvi/Store3Test.kt)
