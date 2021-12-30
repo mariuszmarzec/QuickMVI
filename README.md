@@ -4,12 +4,12 @@ Small piece of code store class with necessary builders
 to provide some architecture pattern to manage better 
 state changes for kotlin multiplatform and compose 
 based projects or android 
-[(check ViewModel wrapper in cheat day app](https://trello.com/b/6P8x5p9W/cheatday).
+[(check ViewModel wrapper in cheat day app](https://github.com/mariuszmarzec/cheatDay).
 
 ## Quick start
 
 I'm not going to publish it anywhere now, if you want to use it, 
-copy to your project, just [mvi.kt](common/commonMain/kotlin/com.marzec.mvi/mvi.kt) file.
+copy to your project, just [mvi.kt](common/src/commonMain/kotlin/com.marzec.mvi/mvi.kt) file.
 
 1. Create store, you, pass default state as argument and scope.
 2. Declare intent action as below, in reducer mutate your current state to get new one and update UI.
