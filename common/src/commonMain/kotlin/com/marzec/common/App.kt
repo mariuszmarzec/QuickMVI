@@ -27,12 +27,17 @@ fun App() {
 
     val scope = rememberCoroutineScope()
     val store = TimersStore(scope)
+    val tickerCounter = TickerCounterStore(scope)
 
-    Screen(store)
+    Column {
+        Timers(store)
+        Spacer(modifier = Modifier.height(16.dp))
+        TickerCounter(tickerCounter)
+    }
 }
 
 @Composable
-private fun Screen(store: TimersStore) {
+private fun Timers(store: TimersStore) {
     val state by store.collectState {
         store.initialTimer()
     }
