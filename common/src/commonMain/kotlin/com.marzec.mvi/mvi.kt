@@ -57,6 +57,12 @@ open class Store3<State : Any>(
         }
     }
 
+    fun <T> cancelFlowsIf(
+        flow: Flow<T>,
+        function: (T) -> Boolean
+    ): Flow<T> = flow.cancelFlowsIf(function)
+
+    @JvmName("cancelFlowsIfExt")
     protected fun <T> Flow<T>.cancelFlowsIf(function: (T) -> Boolean): Flow<T> =
         onEach {
             if (function.invoke(it)) {
