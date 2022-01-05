@@ -57,20 +57,7 @@ open class Store3<State : Any>(
         }
     }
 
-    fun <T> cancelFlowsIf(
-        flow: Flow<T>,
-        function: (T) -> Boolean
-    ): Flow<T> = flow.cancelFlowsIf(function)
-
-    @JvmName("cancelFlowsIfExt")
-    protected fun <T> Flow<T>.cancelFlowsIf(function: (T) -> Boolean): Flow<T> =
-        onEach {
-            if (function.invoke(it)) {
-                cancelAll()
-            }
-        }
-
-    protected fun cancelAll() {
+    fun cancelAll() {
         jobs.forEach { it.value.cancelJob() }
     }
 
@@ -124,7 +111,7 @@ open class Store3<State : Any>(
 
         val identifier = Random.nextLong()
         val intent = builder.build()
-        val job = launchNewJob(intent)
+        val job = launchNewJob(id.isNotEmpty(), intent)
 
         if (id.isNotEmpty()) {
             job.invokeOnCompletion {
@@ -138,16 +125,38 @@ open class Store3<State : Any>(
         }
     }
 
-    private fun <Result : Any> launchNewJob(intent: Intent3<State, Result>): Job = scope.launch {
-        val flow = intent.onTrigger(_state.value) ?: flowOf(null)
-        flow.collect {
-            _intentContextFlow.emit(
-                intent.copy(
-                    state = _state.value,
-                    result = it,
-                    sideEffect = intent.sideEffect
+    private fun <Result : Any> launchNewJob(
+        isCancellable: Boolean,
+        intent: Intent3<State, Result>
+    ): Job = scope.launch {
+        val flow = (intent.onTrigger(_state.value) ?: flowOf(null))
+        if (isCancellable) {
+            flow.cancellable()
+        } else {
+            flow
+        }.collect { result ->
+            val shouldCancel = intent.cancelTrigger?.invoke(result, _state.value)
+            if (shouldCancel == true) {
+                runCancellationAndSideEffectIfNeeded(result, intent)
+            } else {
+                _intentContextFlow.emit(
+                    intent.copy(
+                        state = _state.value,
+                        result = result,
+                    )
                 )
-            )
+            }
+        }
+    }
+
+    private fun <Result : Any> runCancellationAndSideEffectIfNeeded(result: Result?, intent: Intent3<State, Result>) {
+        cancelAll()
+        if (intent.runSideEffectAfterCancel) {
+            intentInternal<Unit> {
+                sideEffect {
+                    intent.sideEffect?.invoke(result, state)
+                }
+            }
         }
     }
 
@@ -168,8 +177,10 @@ private data class IntentJob<State : Any, Result : Any>(
 
 data class Intent3<State, out Result : Any>(
     val onTrigger: suspend (stateParam: State) -> Flow<Result>? = { _ -> null },
+    val cancelTrigger: (suspend (result: Any?, stateParam: State) -> Boolean)? = null,
     val reducer: suspend (result: Any?, stateParam: State) -> State = { _, stateParam -> stateParam },
     val sideEffect: (suspend (result: Any?, state: State) -> Unit)? = null,
+    val runSideEffectAfterCancel: Boolean = false,
     val state: State?,
     val result: Result?
 )
@@ -177,8 +188,10 @@ data class Intent3<State, out Result : Any>(
 @Suppress("UNCHECKED_CAST")
 class IntentBuilder<State : Any, Result : Any>(
     private var onTrigger: suspend (stateParam: State) -> Flow<Result>? = { _ -> null },
+    private var cancelTrigger: (suspend (result: Any?, stateParam: State) -> Boolean)? = null,
     private var reducer: suspend (result: Any?, stateParam: State) -> State = { _, stateParam -> stateParam },
     private var sideEffect: (suspend (result: Any?, state: State) -> Unit)? = null,
+    private var runSideEffectAfterCancel: Boolean = false
 ) {
 
     fun onTrigger(
@@ -186,6 +199,18 @@ class IntentBuilder<State : Any, Result : Any>(
     ): IntentBuilder<State, Result> {
         onTrigger = { state ->
             IntentContext<State, Result>(state, null).func()
+        }
+        return this
+    }
+
+    fun cancelTrigger(
+        runSideEffectAfterCancel: Boolean = false,
+        func: suspend IntentContext<State, Result>.() -> Boolean = { false }
+    ): IntentBuilder<State, Result> {
+        this.runSideEffectAfterCancel = runSideEffectAfterCancel
+        cancelTrigger = { result: Any?, state ->
+            val res = result as? Result
+            IntentContext(state, res).func()
         }
         return this
     }
@@ -208,13 +233,15 @@ class IntentBuilder<State : Any, Result : Any>(
 
     fun build(): Intent3<State, Result> = Intent3(
         onTrigger = onTrigger,
+        cancelTrigger = cancelTrigger,
         reducer = reducer,
         sideEffect = sideEffect,
+        runSideEffectAfterCancel = runSideEffectAfterCancel,
         state = null,
         result = null
     )
 
-    data class IntentContext<State, Result>(
+    data class IntentContext<State : Any, Result>(
         val state: State,
         val result: Result?
     ) {
@@ -227,8 +254,10 @@ fun <State : Any, Result : Any> Intent3<State, Result>.rebuild(
 ) =
     IntentBuilder(
         onTrigger = onTrigger,
+        cancelTrigger = cancelTrigger,
         reducer = reducer,
-        sideEffect = sideEffect
+        sideEffect = sideEffect,
+        runSideEffectAfterCancel = runSideEffectAfterCancel
     ).apply { buildFun(this@rebuild) }.build()
 
 @Composable

@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.*
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -109,5 +110,41 @@ class Store3Test {
         }
 
         values.isEqualTo(0, 1)
+    }
+
+    @Test
+    fun `run sideEffect after cancelling job`() = runStoreTest(dispatcher, 0) {
+        var sideEffectResult: Int = -1
+
+        store.intent("intent") {
+            onTrigger {
+                flow {
+                    emit(1)
+                    delay(500)
+                    emit(2)
+                    delay(500)
+                    emit(3)
+                    delay(100)
+                    emit(4)
+                }
+            }
+
+            cancelTrigger(runSideEffectAfterCancel = true) {
+                resultNonNull() == 2
+            }
+
+            reducer { resultNonNull() }
+
+            sideEffect {
+                if (resultNonNull() == 2) {
+                    sideEffectResult = 2
+                }
+            }
+        }
+
+        testScope.advanceTimeBy(2000)
+
+        values.isEqualTo(0, 1)
+        assertEquals(2, sideEffectResult)
     }
 }
