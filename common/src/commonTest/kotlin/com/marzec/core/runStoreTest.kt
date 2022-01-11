@@ -15,7 +15,7 @@ fun <STATE: Any> runStoreTest(
 ) = StoreTest(dispatcher, defaultState).test(block)
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class StoreTest<STATE: Any>(dispatcher: TestDispatcher, defaultState: STATE) {
+class StoreTest<STATE: Any>(val dispatcher: TestDispatcher, defaultState: STATE) {
 
     private val job = Job()
     private val storeScope = CoroutineScope(dispatcher + job)
@@ -23,7 +23,7 @@ class StoreTest<STATE: Any>(dispatcher: TestDispatcher, defaultState: STATE) {
     lateinit var values: TestCollector<STATE>
     lateinit var testScope: TestScope
 
-    fun test(block: suspend StoreTest<STATE>.() -> Unit) = runTest {
+    fun test(block: suspend StoreTest<STATE>.() -> Unit) = runTest(dispatcher) {
         testScope = this
         store.init()
         values = store.state.test(this)

@@ -8,6 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.test.*
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -28,6 +29,17 @@ class Store3Test {
     @AfterTest
     fun after() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `checks if trigger, state is updated`() = runStoreTest(dispatcher, listOf(0)) {
+
+        store.intent<Int> {
+            onTrigger { flowOf(1, 2).onEach { testScope.advanceUntilIdle() } }
+            reducer { state + resultNonNull() }
+        }
+
+        values.isEqualTo(listOf(0), listOf(0, 1), listOf(0, 1, 2))
     }
 
     @Test
@@ -92,9 +104,7 @@ class Store3Test {
 
             testScope.advanceUntilIdle()
 
-            store.intent<Unit> {
-                reducer { 2 }
-            }
+            store.reducerIntent { 2 }
         }
 
         values.isEqualTo(0, 1, 2)

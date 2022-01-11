@@ -52,6 +52,7 @@ open class Store3<State : Any>(
                     onNewState(it.state!!)
                     it.sideEffect?.invoke(it.result, it.state)
                 }.collect {
+                    println("STATE: $it")
                     _state.emit(it.state!!)
                 }
         }
