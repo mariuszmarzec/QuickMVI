@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -19,12 +18,6 @@ open class Store3<State : Any>(
     private val defaultState: State
 ) {
 
-    private val _intentContextFlow =
-        MutableSharedFlow<Intent3<State, Any>>(
-            extraBufferCapacity = 30,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST
-        )
-
     private var _state = MutableStateFlow(defaultState)
 
     val state: StateFlow<State>
@@ -35,26 +28,7 @@ open class Store3<State : Any>(
     private val jobs = hashMapOf<String, IntentJob<State, Any>>()
 
     suspend fun init(initialAction: suspend () -> Unit = {}) {
-        scope.launch {
-            _intentContextFlow
-                .onSubscription {
-                    _intentContextFlow.emit(Intent3(state = defaultState, result = null))
-                    initialAction()
-                }
-                .runningReduce { old, new ->
-                    val reducedState = new.reducer(new.result, old.state!!)
-                    old.copy(
-                        state = reducedState,
-                        result = new.result,
-                        sideEffect = new.sideEffect
-                    )
-                }.onEach {
-                    onNewState(it.state!!)
-                    it.sideEffect?.invoke(it.result, it.state)
-                }.collect {
-                    _state.emit(it.state!!)
-                }
-        }
+        initialAction()
     }
 
     fun cancelAll() {
@@ -111,7 +85,7 @@ open class Store3<State : Any>(
 
         val identifier = Random.nextLong()
         val intent = builder.build()
-        val job = launchNewJob(id.isNotEmpty(), intent)
+        val job = launchNewJob(intent)
 
         if (id.isNotEmpty()) {
             job.invokeOnCompletion {
@@ -126,26 +100,39 @@ open class Store3<State : Any>(
     }
 
     private fun <Result : Any> launchNewJob(
-        isCancellable: Boolean,
         intent: Intent3<State, Result>
     ): Job = scope.launch {
-        val flow = (intent.onTrigger(_state.value) ?: flowOf(null))
-        if (isCancellable) {
-            flow.cancellable()
+        val flow = withContext(SINGLE_THREAD) {
+            (intent.onTrigger(_state.value) ?: flowOf(null))
+        }.onEach {
+        }
+        flow.collect { result ->
+            processTriggeredValue(intent, result)
+        }
+    }
+
+    private suspend fun <Result : Any> processTriggeredValue(
+        intent: Intent3<State, Result>,
+        result: Result?
+    ) {
+        val shouldCancel = withContext(SINGLE_THREAD) {
+            intent.cancelTrigger?.invoke(result, _state.value)
+        }
+        if (shouldCancel == true) {
+            runCancellationAndSideEffectIfNeeded(result, intent)
+            cancel()
         } else {
-            flow
-        }.collect { result ->
-            val shouldCancel = intent.cancelTrigger?.invoke(result, _state.value)
-            if (shouldCancel == true) {
-                runCancellationAndSideEffectIfNeeded(result, intent)
-                cancel()
-            } else {
-                _intentContextFlow.emit(
-                    intent.copy(
-                        state = _state.value,
-                        result = result,
-                    )
+            withContext(SINGLE_THREAD) {
+                val oldStateValue = _state.value
+                val newResultIntent = intent.copy(
+                    state = oldStateValue,
+                    result = result,
                 )
+
+                val reducedState = newResultIntent.reducer(result, oldStateValue)
+                onNewState(reducedState)
+                newResultIntent.sideEffect?.invoke(result, reducedState)
+                _state.value = reducedState
             }
         }
     }
@@ -167,6 +154,10 @@ open class Store3<State : Any>(
 
     private fun IntentJob<State, Any>.cancelJob() {
         job.cancel()
+    }
+
+    companion object {
+        private val SINGLE_THREAD = newSingleThreadContext("mvi")
     }
 }
 
