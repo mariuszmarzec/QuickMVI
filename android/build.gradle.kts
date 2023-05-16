@@ -13,14 +13,14 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("androidx.activity:activity-compose:1.3.0")
+    implementation("androidx.activity:activity-compose:1.4.0")
 }
 
 android {
     compileSdkVersion(33)
     defaultConfig {
         applicationId = "com.marzec.android"
-        minSdkVersion(24)
+        minSdkVersion(30)
         targetSdkVersion(33)
         versionCode = 1
         versionName = "1.0"
