@@ -3,13 +3,20 @@ package com.marzec.mvi
 import com.marzec.core.runStoreTest
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.*
+import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -19,23 +26,37 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 class Store3Test {
 
-    val dispatcher: TestDispatcher = StandardTestDispatcher()
+    val scope = TestScope()
+    val dispatcher: TestDispatcher = UnconfinedTestDispatcher(scope.testScheduler)
 
-    @BeforeTest
-    fun setup() {
-        Dispatchers.setMain(dispatcher)
-    }
+    @Test
+    fun `checks if trigger, state is updated in classic way`() = scope.runTest {
+        Store3.stateThread = dispatcher
 
-    @AfterTest
-    fun after() {
-        Dispatchers.resetMain()
+        val store = Store3<List<Int>>(scope, listOf(0))
+        val states = mutableListOf<Any>()
+
+        val job = launch(dispatcher) { store.state.toCollection(states) }
+
+        store.intent<Int> {
+            onTrigger {
+                flowOf(1, 2) }
+            reducer {
+                state + resultNonNull() }
+        }
+
+        advanceUntilIdle()
+
+        assertEquals(listOf<Any>(listOf(0), listOf(0, 1), listOf(0, 1, 2)), states)
+
+        job.cancel()
     }
 
     @Test
-    fun `checks if trigger, state is updated`() = runStoreTest(dispatcher, listOf(0)) {
+    fun `checks if trigger, state is updated`() = runStoreTest(listOf(0)) {
 
         store.intent<Int> {
-            onTrigger { flowOf(1, 2).onEach { testScope.advanceUntilIdle() } }
+            onTrigger { flowOf(1, 2) }
             reducer { state + resultNonNull() }
         }
 
@@ -43,7 +64,7 @@ class Store3Test {
     }
 
     @Test
-    fun `checks if trigger, reducer and side effect are called`() = runStoreTest(dispatcher, 0) {
+    fun `checks if trigger, reducer and side effect are called`() = runStoreTest( 0) {
         val func = mockk<suspend IntentBuilder.IntentContext<Int, Int>.() -> Unit>(relaxed = true)
 
         store.intent {
@@ -53,9 +74,7 @@ class Store3Test {
 
             sideEffect(func)
         }
-
-        testScope.advanceUntilIdle()
-
+        
         store.intent {
             onTrigger { flowOf(2) }
 
@@ -69,7 +88,7 @@ class Store3Test {
     }
 
     @Test
-    fun `checks calling second time intent with id, kills previous one`() = runStoreTest(dispatcher, 0) {
+    fun `checks calling second time intent with id, kills previous one`() = runStoreTest(0) {
         store.intent("id") {
             onTrigger {
                 flow {
@@ -83,26 +102,24 @@ class Store3Test {
             reducer { resultNonNull() }
         }
 
-        testScope.advanceTimeBy(1100)
+        scope.advanceTimeBy(1100)
 
         store.intent("id") {
             onTrigger { flowOf(2) }
 
             reducer { resultNonNull() }
         }
-        testScope.advanceTimeBy(1000)
+        scope.advanceTimeBy(1000)
 
         values.isEqualTo(0, 1, 2)
     }
 
     @Test
-    fun `checks if running few intents in side effect works`() = runStoreTest(dispatcher, 0) {
+    fun `checks if running few intents in side effect works`() = runStoreTest(0) {
 
         store.sideEffect {
 
             store.reducerIntent { 1 }
-
-            testScope.advanceUntilIdle()
 
             store.reducerIntent { 2 }
         }
@@ -111,19 +128,19 @@ class Store3Test {
     }
 
     @Test
-    fun `checks if initial action is called`() = runStoreTest(dispatcher, 0) {
+    fun `checks if initial action is called`() = runStoreTest(0) {
         store.init {
             store.intent<Unit> {
                 reducer { 1 }
             }
-            testScope.advanceUntilIdle()
+            scope.advanceUntilIdle()
         }
 
         values.isEqualTo(0, 1)
     }
 
     @Test
-    fun `run sideEffect after cancelling job`() = runStoreTest(dispatcher, 0) {
+    fun `run sideEffect after cancelling job`() = runStoreTest(0) {
         var sideEffectResult: Int = -1
 
         store.intent("intent") {
@@ -152,7 +169,7 @@ class Store3Test {
             }
         }
 
-        testScope.advanceTimeBy(2000)
+        scope.advanceTimeBy(2000)
 
         values.isEqualTo(0, 1)
         assertEquals(2, sideEffectResult)

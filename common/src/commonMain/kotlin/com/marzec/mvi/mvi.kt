@@ -102,11 +102,15 @@ open class Store3<State : Any>(
     private fun <Result : Any> launchNewJob(
         intent: Intent3<State, Result>
     ): Job = scope.launch {
-        val flow = withContext(SINGLE_THREAD) {
+        println("Asdas")
+
+        val flow = withContext(stateThread) {
             (intent.onTrigger(_state.value) ?: flowOf(null))
         }.onEach {
+            println("asdasdg")
         }
         flow.collect { result ->
+            println("collect1")
             processTriggeredValue(intent, result)
         }
     }
@@ -115,14 +119,16 @@ open class Store3<State : Any>(
         intent: Intent3<State, Result>,
         result: Result?
     ) {
-        val shouldCancel = withContext(SINGLE_THREAD) {
+        val shouldCancel = withContext(stateThread) {
             intent.cancelTrigger?.invoke(result, _state.value)
         }
+        println("shouldCancel")
         if (shouldCancel == true) {
             runCancellationAndSideEffectIfNeeded(result, intent)
             cancel()
         } else {
-            withContext(SINGLE_THREAD) {
+            println("ELSE")
+            withContext(stateThread) {
                 val oldStateValue = _state.value
                 val newResultIntent = intent.copy(
                     state = oldStateValue,
@@ -132,6 +138,7 @@ open class Store3<State : Any>(
                 val reducedState = newResultIntent.reducer(result, oldStateValue)
                 onNewState(reducedState)
                 newResultIntent.sideEffect?.invoke(result, reducedState)
+                println(reducedState)
                 _state.value = reducedState
             }
         }
@@ -157,7 +164,7 @@ open class Store3<State : Any>(
     }
 
     companion object {
-        private val SINGLE_THREAD = newSingleThreadContext("mvi")
+        var stateThread: CoroutineDispatcher = newSingleThreadContext("mvi")
     }
 }
 
