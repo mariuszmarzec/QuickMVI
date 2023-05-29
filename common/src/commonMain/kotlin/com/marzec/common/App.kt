@@ -1,9 +1,12 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.marzec.common
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.marzec.mvi.Store3
 import com.marzec.mvi.collectState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 
@@ -28,11 +32,14 @@ fun App() {
     val scope = rememberCoroutineScope()
     val store = TimersStore(scope)
     val tickerCounter = TickerCounterStore(scope)
+    val textStore = Store3(scope, "")
 
     Column {
         Timers(store)
         Spacer(modifier = Modifier.height(16.dp))
         TickerCounter(tickerCounter)
+        Spacer(modifier = Modifier.height(16.dp))
+        TextFieldExample(textStore)
     }
 }
 
@@ -222,4 +229,20 @@ private fun timer(timeInMillis: Long) = flow {
         emit(TimerEvent.Progress(progress))
     }
     emit(TimerEvent.Done)
+}
+
+@Composable
+private fun TextFieldExample(store: Store3<String>) {
+
+    val state = store.state.collectAsState()
+
+    Box(Modifier.padding(horizontal = 16.dp)) {
+        TextField(state.value, onValueChange = { newValue ->
+            store.intent<Unit> {
+                reducer {
+                    newValue
+                }
+            }
+        })
+    }
 }

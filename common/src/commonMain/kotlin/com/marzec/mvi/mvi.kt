@@ -102,15 +102,11 @@ open class Store3<State : Any>(
     private fun <Result : Any> launchNewJob(
         intent: Intent3<State, Result>
     ): Job = scope.launch {
-        println("Asdas")
 
         val flow = withContext(stateThread) {
             (intent.onTrigger(_state.value) ?: flowOf(null))
-        }.onEach {
-            println("asdasdg")
         }
         flow.collect { result ->
-            println("collect1")
             processTriggeredValue(intent, result)
         }
     }
@@ -122,12 +118,10 @@ open class Store3<State : Any>(
         val shouldCancel = withContext(stateThread) {
             intent.cancelTrigger?.invoke(result, _state.value)
         }
-        println("shouldCancel")
         if (shouldCancel == true) {
             runCancellationAndSideEffectIfNeeded(result, intent)
             cancel()
         } else {
-            println("ELSE")
             withContext(stateThread) {
                 val oldStateValue = _state.value
                 val newResultIntent = intent.copy(
@@ -138,7 +132,6 @@ open class Store3<State : Any>(
                 val reducedState = newResultIntent.reducer(result, oldStateValue)
                 onNewState(reducedState)
                 newResultIntent.sideEffect?.invoke(result, reducedState)
-                println(reducedState)
                 _state.value = reducedState
             }
         }
