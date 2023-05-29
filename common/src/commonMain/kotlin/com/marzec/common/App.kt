@@ -2,22 +2,37 @@
 
 package com.marzec.common
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.ZeroCornerSize
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.material.LocalTextStyle
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldColors
+import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.marzec.mvi.Store3
 import com.marzec.mvi.collectState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 
 data class TimersState(
     val slow: Float = 0f,
@@ -234,15 +249,81 @@ private fun timer(timeInMillis: Long) = flow {
 @Composable
 private fun TextFieldExample(store: Store3<String>) {
 
-    val state = store.state.collectAsState()
+    val state = store.state.collectAsState(Dispatchers.Default)
 
     Box(Modifier.padding(horizontal = 16.dp)) {
-        TextField(state.value, onValueChange = { newValue ->
+
+        TextFieldWorkAround(state.value, onValueChange = {
             store.intent<Unit> {
                 reducer {
-                    newValue
+                    it
                 }
             }
         })
     }
+}
+
+@Composable
+fun TextFieldWorkAround(
+    stateValue: String,
+    onValueChange: (String) -> Unit,
+    initialValue: String = "",
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    readOnly: Boolean = false,
+    textStyle: TextStyle = LocalTextStyle.current,
+    label: @Composable (() -> Unit)? = null,
+    placeholder: @Composable (() -> Unit)? = null,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    isError: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions(),
+    singleLine: Boolean = false,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
+    minLines: Int = 1,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    shape: Shape =
+        MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
+    colors: TextFieldColors = TextFieldDefaults.textFieldColors()
+) {
+
+    var internalValue by remember { mutableStateOf(stateValue) }
+
+
+    snapshotFlow { internalValue }
+        .onEach {
+            onValueChange(it)
+        }
+        .stateIn(
+            scope = rememberCoroutineScope(),
+            started = SharingStarted.Eagerly,
+            initialValue = initialValue
+        )
+
+    TextField(
+        value = internalValue,
+        onValueChange = { newValue ->
+            internalValue = newValue
+        },
+        modifier = modifier,
+        enabled = enabled,
+        readOnly = readOnly,
+        textStyle = textStyle,
+        label = label,
+        placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        isError = isError,
+        visualTransformation = visualTransformation,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        singleLine = singleLine,
+        maxLines = maxLines,
+        minLines = minLines,
+        interactionSource = interactionSource,
+        shape = shape,
+        colors = colors
+    )
 }
