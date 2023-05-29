@@ -129,10 +129,9 @@ open class Store3<State : Any>(
                     result = result,
                 )
 
-                val reducedState = newResultIntent.reducer(result, oldStateValue)
-                onNewState(reducedState)
-                newResultIntent.sideEffect?.invoke(result, reducedState)
-                _state.value = reducedState
+                _state.update { newResultIntent.reducer(result, oldStateValue) }
+                onNewState(_state.value)
+                newResultIntent.sideEffect?.invoke(result, _state.value)
             }
         }
     }
