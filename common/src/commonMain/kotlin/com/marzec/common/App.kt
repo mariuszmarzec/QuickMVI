@@ -31,7 +31,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 
 data class TimersState(
@@ -253,7 +253,7 @@ private fun TextFieldExample(store: Store3<String>) {
 
     Box(Modifier.padding(horizontal = 16.dp)) {
 
-        TextFieldWorkAround(state.value, onValueChange = {
+        TextFieldStateful(state.value, onValueChange = {
             store.intent<Unit> {
                 reducer {
                     it
@@ -264,10 +264,9 @@ private fun TextFieldExample(store: Store3<String>) {
 }
 
 @Composable
-fun TextFieldWorkAround(
-    stateValue: String,
+fun TextFieldStateful(
+    value: String,
     onValueChange: (String) -> Unit,
-    initialValue: String = "",
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     readOnly: Boolean = false,
@@ -289,23 +288,23 @@ fun TextFieldWorkAround(
     colors: TextFieldColors = TextFieldDefaults.textFieldColors()
 ) {
 
-    var internalValue by remember { mutableStateOf(stateValue) }
+    var state by remember { mutableStateOf(value) }
 
 
-    snapshotFlow { internalValue }
-        .onEach {
+    snapshotFlow { state }
+        .mapLatest {
             onValueChange(it)
         }
         .stateIn(
             scope = rememberCoroutineScope(),
-            started = SharingStarted.Eagerly,
-            initialValue = initialValue
+            started = SharingStarted.Lazily,
+            initialValue = state
         )
 
     TextField(
-        value = internalValue,
+        value = state,
         onValueChange = { newValue ->
-            internalValue = newValue
+            state = newValue
         },
         modifier = modifier,
         enabled = enabled,
