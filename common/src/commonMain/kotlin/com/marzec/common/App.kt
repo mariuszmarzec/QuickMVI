@@ -287,9 +287,7 @@ fun TextFieldStateful(
         MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
     colors: TextFieldColors = TextFieldDefaults.textFieldColors()
 ) {
-
     var state by remember { mutableStateOf(value) }
-
 
     snapshotFlow { state }
         .mapLatest {
