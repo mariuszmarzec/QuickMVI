@@ -3,7 +3,13 @@
 package com.marzec.common
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,7 +21,14 @@ import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldColors
 import androidx.compose.material.TextFieldDefaults
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,8 +43,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 
 data class TimersState(
@@ -48,6 +63,7 @@ fun App() {
     val store = TimersStore(scope)
     val tickerCounter = TickerCounterStore(scope)
     val textStore = Store3(scope, "")
+    val autoCancelStore = Store3(scope, 0)
 
     Column {
         Timers(store)
@@ -55,6 +71,8 @@ fun App() {
         TickerCounter(tickerCounter)
         Spacer(modifier = Modifier.height(16.dp))
         TextFieldExample(textStore)
+        Spacer(modifier = Modifier.height(16.dp))
+        AutoCancelExample(autoCancelStore)
     }
 }
 
@@ -323,4 +341,36 @@ fun TextFieldStateful(
         shape = shape,
         colors = colors
     )
+}
+
+@Composable
+fun AutoCancelExample(autoCancelStore: Store3<Int>) {
+    val lastValue = 10
+    val state = autoCancelStore.state.collectAsState()
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Button({
+            autoCancelStore.intent<Int> {
+                onTrigger {
+                    (1..20).asFlow().onEach { delay(50) }
+                }
+
+                cancelTrigger(runSideEffectAfterCancel = true) { resultNonNull() == lastValue }
+
+                reducer {
+                    resultNonNull()
+                }
+
+                sideEffect {
+                    if (resultNonNull() == lastValue) {
+                        println("END on $lastValue")
+                    }
+                }
+            }
+        }) {
+            Text("Start, will be canceled at $lastValue")
+        }
+        Spacer(Modifier.width(16.dp))
+        Text("Counter: ${state.value}")
+    }
 }
