@@ -93,15 +93,14 @@ open class Store3<State : Any>(
                 jobs.remove(newJobId)
             }
         }
-        if (job.isActive) {
-            jobs[newJobId] = IntentJob(identifier, intent, job)
-        }
+        jobs[newJobId] = IntentJob(identifier, intent, job)
+        job.start()
     }
 
     private fun <Result : Any> launchNewJob(
         intent: Intent3<State, Result>,
         jobId: String
-    ): Job = scope.launch {
+    ): Job = scope.launch(start = CoroutineStart.LAZY) {
 
         val flow = withContext(stateThread) {
             (intent.onTrigger(_state.value) ?: flowOf(null))
