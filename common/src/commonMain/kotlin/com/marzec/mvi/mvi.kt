@@ -37,20 +37,20 @@ open class Store3<State : Any>(
 
     open suspend fun onNewState(newState: State) = Unit
 
-    fun <Result : Any> intent(id: String = "", @BuilderInference buildFun: IntentBuilder<State, Result>.() -> Unit) {
+    fun <Result : Any> intent(id: String? = null, @BuilderInference buildFun: IntentBuilder<State, Result>.() -> Unit) {
         intentInternal(id, buildFun)
     }
 
     fun <Result : Any> intent(@BuilderInference buildFun: IntentBuilder<State, Result>.() -> Unit) {
-        intentInternal("", buildFun)
+        intentInternal(id = null, buildFun)
     }
 
-    fun <Result : Any> intent(id: String = "", builder: IntentBuilder<State, Result>) {
+    fun <Result : Any> intent(id: String? = null, builder: IntentBuilder<State, Result>) {
         intentInternal(id, builder)
     }
 
     fun <Result : Any> intent(builder: IntentBuilder<State, Result>) {
-        intentInternal("", builder)
+        intentInternal(id = null, builder)
     }
 
     fun <Result : Any> triggerIntent(func: suspend IntentBuilder.IntentContext<State, Result>.() -> Flow<Result>?) {
