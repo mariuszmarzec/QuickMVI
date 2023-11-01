@@ -3,22 +3,14 @@ package com.marzec.mvi
 import com.marzec.core.runStoreTest
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.test.*
-import kotlinx.coroutines.withContext
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -40,9 +32,11 @@ class Store3Test {
 
         store.intent<Int> {
             onTrigger {
-                flowOf(1, 2) }
+                flowOf(1, 2)
+            }
             reducer {
-                state + resultNonNull() }
+                state + resultNonNull()
+            }
         }
 
         advanceUntilIdle()
@@ -64,8 +58,22 @@ class Store3Test {
     }
 
     @Test
-    fun `checks if trigger, reducer and side effect are called`() = runStoreTest( 0) {
-        val func = mockk<suspend IntentBuilder.IntentContext<Int, Int>.() -> Unit>(relaxed = true)
+    fun `checks if action run, when intent passed, then state is updated`() = runStoreTest(listOf(0)) {
+
+        val intent = intent<List<Int>, Int> {
+            onTrigger { flowOf(1, 2) }
+
+            reducer { state + resultNonNull() }
+        }
+
+        store.run(intent)
+
+        values.isEqualTo(listOf(0), listOf(0, 1), listOf(0, 1, 2))
+    }
+
+    @Test
+    fun `checks if trigger, reducer and side effect are called`() = runStoreTest(0) {
+        val func = mockk<suspend IntentContext<Int, Int>.() -> Unit>(relaxed = true)
 
         store.intent {
             onTrigger { flowOf(1) }
@@ -74,7 +82,7 @@ class Store3Test {
 
             sideEffect(func)
         }
-        
+
         store.intent {
             onTrigger { flowOf(2) }
 

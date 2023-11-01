@@ -25,7 +25,7 @@ open class Store3<State : Any>(
 
     open val identifier: Any = Unit
 
-    private val jobs = hashMapOf<String, IntentJob<State, Any>>()
+    private val jobs = hashMapOf<String, IntentJob<State, out Any>>()
 
     suspend fun init(initialAction: suspend () -> Unit = {}) {
         initialAction()
@@ -38,54 +38,72 @@ open class Store3<State : Any>(
     open suspend fun onNewState(newState: State) = Unit
 
     fun <Result : Any> intent(id: String? = null, @BuilderInference buildFun: IntentBuilder<State, Result>.() -> Unit) {
-        intentInternal(id, buildFun)
+        intentByBuilderInternal(id, buildFun)
     }
 
     fun <Result : Any> intent(@BuilderInference buildFun: IntentBuilder<State, Result>.() -> Unit) {
-        intentInternal(id = null, buildFun)
+        intentByBuilderInternal(id = null, buildFun)
     }
 
     fun <Result : Any> intent(id: String? = null, builder: IntentBuilder<State, Result>) {
-        intentInternal(id, builder)
+        intentByBuilderInternal(id, builder)
     }
 
     fun <Result : Any> intent(builder: IntentBuilder<State, Result>) {
-        intentInternal(id = null, builder)
+        intentByBuilderInternal(id = null, builder)
     }
 
-    fun <Result : Any> triggerIntent(func: suspend IntentBuilder.IntentContext<State, Result>.() -> Flow<Result>?) {
-        intentInternal<Result> { onTrigger(func) }
+    fun <Result : Any> triggerIntent(func: suspend IntentContext<State, Result>.() -> Flow<Result>?) {
+        intentByBuilderInternal<Result> { onTrigger(func) }
     }
 
+    @Deprecated("Will be removed", replaceWith = ReplaceWith("triggerIntent(func)"))
     fun <Result : Any> onTrigger(
-        @BuilderInference func: suspend IntentBuilder.IntentContext<State, Result>.() -> Flow<Result>? = { null }
+        @BuilderInference func: suspend IntentContext<State, Result>.() -> Flow<Result>? = { null }
     ): IntentBuilder<State, Result> {
         return IntentBuilder<State, Result>().apply { onTrigger(func) }
     }
 
-    fun reducerIntent(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> State) {
-        intentInternal<Unit> { reducer(func) }
+    fun reducerIntent(func: suspend IntentContext<State, Unit>.() -> State) {
+        intentByBuilderInternal<Unit> { reducer(func) }
     }
 
-    fun reduce(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> State): IntentBuilder<State, Unit> {
+    @Deprecated("Will be removed", replaceWith = ReplaceWith("reducerIntent(func)"))
+    fun reduce(func: suspend IntentContext<State, Unit>.() -> State): IntentBuilder<State, Unit> {
         return IntentBuilder<State, Unit>().apply { reducer(func) }
     }
 
-    fun sideEffect(func: suspend IntentBuilder.IntentContext<State, Unit>.() -> Unit) {
-        intentInternal<Unit> { sideEffect(func) }
+    @Deprecated("Will be removed", replaceWith = ReplaceWith("sideEffectIntent(func)"))
+    fun sideEffect(func: suspend IntentContext<State, Unit>.() -> Unit) {
+        intentByBuilderInternal<Unit> { sideEffect(func) }
     }
 
-    private fun <Result : Any> intentInternal(id: String? = null, buildFun: IntentBuilder<State, Result>.() -> Unit) {
+    fun sideEffectIntent(func: suspend IntentContext<State, Unit>.() -> Unit) {
+        intentByBuilderInternal<Unit> { sideEffect(func) }
+    }
+
+    private fun <Result : Any> intentByBuilderInternal(
+        id: String? = null,
+        buildFun: IntentBuilder<State, Result>.() -> Unit
+    ) {
         val builder = IntentBuilder<State, Result>().apply { buildFun() }
-        intentInternal(id, builder)
+        intentByBuilderInternal(id, builder)
     }
 
-    private fun <Result : Any> intentInternal(id: String? = null, builder: IntentBuilder<State, Result>) {
+    private fun <Result : Any> intentByBuilderInternal(id: String? = null, builder: IntentBuilder<State, Result>) {
+        val intent = builder.build()
+        run(id, intent)
+    }
+
+    fun <Result : Any> run(intent: Intent3<State, Result>) {
+        run(id = null, intent)
+    }
+
+    fun <Result : Any> run(id: String?, intent: Intent3<State, Result>) {
         val newJobId = id ?: System.nanoTime().toString()
         jobs[newJobId]?.cancelJob()
 
         val identifier = Random.nextLong()
-        val intent = builder.build()
         val job = launchNewJob(intent, newJobId)
 
         job.invokeOnCompletion {
@@ -117,20 +135,15 @@ open class Store3<State : Any>(
     ) {
         val shouldCancel = withContext(stateThread) {
             intent.cancelTrigger?.invoke(result, _state.value)
-        }
-        if (shouldCancel == true) {
+        } ?: false
+        if (shouldCancel) {
             runCancellationAndSideEffectIfNeeded(result, intent, jobId)
         } else {
             withContext(stateThread) {
                 val oldStateValue = _state.value
-                val newResultIntent = intent.copy(
-                    state = oldStateValue,
-                    result = result,
-                )
-
-                _state.update { newResultIntent.reducer(result, oldStateValue) }
+                _state.update { intent.reducer(result, oldStateValue) }
                 onNewState(_state.value)
-                newResultIntent.sideEffect?.invoke(result, _state.value)
+                intent.sideEffect?.invoke(result, _state.value)
             }
         }
     }
@@ -142,7 +155,7 @@ open class Store3<State : Any>(
     ) {
         cancel(jobId)
         if (intent.runSideEffectAfterCancel) {
-            intentInternal<Unit> {
+            intentByBuilderInternal<Unit> {
                 sideEffect {
                     intent.sideEffect?.invoke(result, state)
                 }
@@ -154,7 +167,7 @@ open class Store3<State : Any>(
         ids.forEach { jobs[it]?.cancelJob() }
     }
 
-    private fun IntentJob<State, Any>.cancelJob() {
+    private fun IntentJob<State, out Any>.cancelJob() {
         job.cancel()
     }
 
@@ -169,22 +182,20 @@ private data class IntentJob<State : Any, Result : Any>(
     val job: Job
 )
 
-data class Intent3<State, out Result : Any>(
-    val onTrigger: suspend (stateParam: State) -> Flow<Result>? = { _ -> null },
-    val cancelTrigger: (suspend (result: Any?, stateParam: State) -> Boolean)? = null,
-    val reducer: suspend (result: Any?, stateParam: State) -> State = { _, stateParam -> stateParam },
-    val sideEffect: (suspend (result: Any?, state: State) -> Unit)? = null,
-    val runSideEffectAfterCancel: Boolean = false,
-    val state: State?,
-    val result: Result?
+data class Intent3<State, Result : Any>(
+    val onTrigger: suspend (state: State) -> Flow<Result>? = { _ -> null },
+    val cancelTrigger: (suspend (result: Result?, state: State) -> Boolean)? = null,
+    val reducer: suspend (result: Result?, state: State) -> State = { _, state -> state },
+    val sideEffect: (suspend (result: Result?, state: State) -> Unit)? = null,
+    val runSideEffectAfterCancel: Boolean = false
 )
 
 @Suppress("UNCHECKED_CAST")
 class IntentBuilder<State : Any, Result : Any>(
-    private var onTrigger: suspend (stateParam: State) -> Flow<Result>? = { _ -> null },
-    private var cancelTrigger: (suspend (result: Any?, stateParam: State) -> Boolean)? = null,
-    private var reducer: suspend (result: Any?, stateParam: State) -> State = { _, stateParam -> stateParam },
-    private var sideEffect: (suspend (result: Any?, state: State) -> Unit)? = null,
+    private var onTrigger: suspend (state: State) -> Flow<Result>? = { _ -> null },
+    private var cancelTrigger: (suspend (result: Result?, state: State) -> Boolean)? = null,
+    private var reducer: suspend (result: Result?, state: State) -> State = { _, state -> state },
+    private var sideEffect: (suspend (result: Result?, state: State) -> Unit)? = null,
     private var runSideEffectAfterCancel: Boolean = false
 ) {
 
@@ -202,25 +213,22 @@ class IntentBuilder<State : Any, Result : Any>(
         func: suspend IntentContext<State, Result>.() -> Boolean = { false }
     ): IntentBuilder<State, Result> {
         this.runSideEffectAfterCancel = runSideEffectAfterCancel
-        cancelTrigger = { result: Any?, state ->
-            val res = result as? Result
-            IntentContext(state, res).func()
+        cancelTrigger = { result: Result?, state ->
+            IntentContext(state, result).func()
         }
         return this
     }
 
     fun reducer(func: suspend IntentContext<State, Result>.() -> State): IntentBuilder<State, Result> {
-        reducer = { result: Any?, state ->
-            val res = result as? Result
-            IntentContext(state, res).func()
+        reducer = { result: Result?, state ->
+            IntentContext(state, result).func()
         }
         return this
     }
 
     fun sideEffect(func: suspend IntentContext<State, Result>.() -> Unit): IntentBuilder<State, Result> {
-        sideEffect = { result: Any?, state ->
-            val res = result as? Result
-            IntentContext(state, res).func()
+        sideEffect = { result: Result?, state ->
+            IntentContext(state, result).func()
         }
         return this
     }
@@ -230,23 +238,28 @@ class IntentBuilder<State : Any, Result : Any>(
         cancelTrigger = cancelTrigger,
         reducer = reducer,
         sideEffect = sideEffect,
-        runSideEffectAfterCancel = runSideEffectAfterCancel,
-        state = null,
-        result = null
+        runSideEffectAfterCancel = runSideEffectAfterCancel
     )
 
-    data class IntentContext<State : Any, Result>(
-        val state: State,
-        val result: Result?
-    ) {
-        fun resultNonNull(): Result = result!!
+    companion object {
+        fun <State : Any, Result : Any> build(buildFun: IntentBuilder<State, Result>.() -> Unit): Intent3<State, Result> =
+            IntentBuilder<State, Result>().apply(buildFun).build()
     }
+}
+
+fun <State : Any, Result : Any> intent(buildFun: IntentBuilder<State, Result>.() -> Unit): Intent3<State, Result> =
+    IntentBuilder.build(buildFun)
+
+data class IntentContext<State : Any, Result>(
+    val state: State,
+    val result: Result?
+) {
+    fun resultNonNull(): Result = result!!
 }
 
 fun <State : Any, Result : Any> Intent3<State, Result>.rebuild(
     buildFun: IntentBuilder<State, Result>.(Intent3<State, Result>) -> Unit
-) =
-    IntentBuilder(
+) = IntentBuilder(
         onTrigger = onTrigger,
         cancelTrigger = cancelTrigger,
         reducer = reducer,
