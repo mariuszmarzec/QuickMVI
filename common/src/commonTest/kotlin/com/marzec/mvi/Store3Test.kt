@@ -5,10 +5,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
 import kotlin.test.Test
@@ -208,5 +205,31 @@ class Store3Test {
             Result.success(2)
         )
         assertEquals(20, sideValue)
+    }
+    @Test
+    fun `run composite intent`() = runStoreTest(10) {
+        val sideValues = mutableListOf<String>()
+        val innerIntent = intent<Int, Int> {
+            onTrigger { flowOf( 2, 3) }
+
+            reducer { state + resultNonNull() }
+
+            sideEffect { sideValues.add(state.toString()) }
+        }
+
+        val mappedIntent = innerIntent.composite { inner ->
+            onTrigger {
+                innerIntent.onTrigger(state)?.map { it * 10 }
+            }
+
+            reducer {
+                inner.reducer(result, state) + 1
+            }
+        }
+
+        store.run(mappedIntent)
+
+        values.isEqualTo(10, 31, 62)
+        assertEquals(listOf("31", "62"), sideValues)
     }
 }

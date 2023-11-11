@@ -284,27 +284,34 @@ fun <T : Any> Store3<T>.collectState(
 
 fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.map(
     stateReducer: IntentContext<OutState, Result>.((result: Result?, state: InState) -> InState) -> OutState,
-    stateMapper: (OutState) -> InState?
+    stateMapper: (OutState) -> InState?,
+    setUp: IntentBuilder<OutState, Result>.(innerIntent: Intent3<InState, Result>) -> Unit = { }
 ): Intent3<OutState, Result> =
     let { inner ->
-        Intent3(
-            onTrigger = { state -> stateMapper(state)?.let { inner.onTrigger(it) } },
-            cancelTrigger = inner.cancelTrigger?.let { cancelTrigger ->
-                { result, state ->
+        intent {
+            onTrigger { stateMapper(state)?.let { inner.onTrigger(it) } }
+
+            cancelTrigger(inner.runSideEffectAfterCancel) {
+                inner.cancelTrigger?.let { cancelTrigger ->
                     stateMapper(state)?.let { cancelTrigger(result, it) } ?: false
-                }
-            },
-            reducer = { result, state ->
-                IntentContext(
-                    state,
-                    result
-                ).run { stateReducer(inner.reducer) }
-            },
-            sideEffect = inner.sideEffect?.let { sideEffect ->
-                { result, state ->
+                } ?: false
+            }
+
+            reducer {
+                stateReducer(inner.reducer)
+            }
+
+            sideEffect {
+                inner.sideEffect?.let { sideEffect ->
                     stateMapper(state)?.let { sideEffect(result, it) }
                 }
-            },
-            runSideEffectAfterCancel = inner.runSideEffectAfterCancel
-        )
+            }
+
+            setUp(inner)
+        }
     }
+
+fun <State : Any, Result : Any> Intent3<State, Result>.composite(
+    setUp: IntentBuilder<State, Result>.(innerIntent: Intent3<State, Result>) -> Unit = { }
+): Intent3<State, Result> =
+    map(stateReducer = { it(result, state) }, stateMapper = { it }, setUp = setUp)
