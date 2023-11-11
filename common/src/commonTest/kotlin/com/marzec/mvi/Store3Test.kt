@@ -182,4 +182,31 @@ class Store3Test {
         values.isEqualTo(0, 1)
         assertEquals(2, sideEffectResult)
     }
+
+    @Test
+    fun `run mapped intent`() = runStoreTest(Result.success(1)) {
+        var sideValue = 0
+        val innerIntent = intent<Int, Int> {
+            onTrigger { flowOf(state * 2) }
+
+            reducer { resultNonNull() }
+
+            sideEffect { sideValue = state * 10 }
+        }
+
+        val mappedIntent = innerIntent.map<Result<Int>, Int, Int>(
+            stateReducer = { innerReducer ->
+                state.map { innerReducer(resultNonNull(), it) }
+            },
+            stateMapper = { it.getOrNull() }
+        )
+
+        store.run(mappedIntent)
+
+        values.isEqualTo(
+            Result.success(1),
+            Result.success(2)
+        )
+        assertEquals(20, sideValue)
+    }
 }

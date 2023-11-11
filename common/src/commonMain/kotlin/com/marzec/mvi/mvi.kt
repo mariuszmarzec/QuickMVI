@@ -64,12 +64,12 @@ open class Store3<State : Any>(
         return IntentBuilder<State, Result>().apply { onTrigger(func) }
     }
 
-    fun reducerIntent(func: suspend IntentContext<State, Unit>.() -> State) {
+    fun reducerIntent(func: IntentContext<State, Unit>.() -> State) {
         intentByBuilderInternal<Unit> { reducer(func) }
     }
 
     @Deprecated("Will be removed", replaceWith = ReplaceWith("reducerIntent(func)"))
-    fun reduce(func: suspend IntentContext<State, Unit>.() -> State): IntentBuilder<State, Unit> {
+    fun reduce(func: IntentContext<State, Unit>.() -> State): IntentBuilder<State, Unit> {
         return IntentBuilder<State, Unit>().apply { reducer(func) }
     }
 
@@ -185,7 +185,7 @@ private data class IntentJob<State : Any, Result : Any>(
 data class Intent3<State, Result : Any>(
     val onTrigger: suspend (state: State) -> Flow<Result>? = { _ -> null },
     val cancelTrigger: (suspend (result: Result?, state: State) -> Boolean)? = null,
-    val reducer: suspend (result: Result?, state: State) -> State = { _, state -> state },
+    val reducer: (result: Result?, state: State) -> State = { _, state -> state },
     val sideEffect: (suspend (result: Result?, state: State) -> Unit)? = null,
     val runSideEffectAfterCancel: Boolean = false
 )
@@ -194,7 +194,7 @@ data class Intent3<State, Result : Any>(
 class IntentBuilder<State : Any, Result : Any>(
     private var onTrigger: suspend (state: State) -> Flow<Result>? = { _ -> null },
     private var cancelTrigger: (suspend (result: Result?, state: State) -> Boolean)? = null,
-    private var reducer: suspend (result: Result?, state: State) -> State = { _, state -> state },
+    private var reducer: (result: Result?, state: State) -> State = { _, state -> state },
     private var sideEffect: (suspend (result: Result?, state: State) -> Unit)? = null,
     private var runSideEffectAfterCancel: Boolean = false
 ) {
@@ -219,7 +219,7 @@ class IntentBuilder<State : Any, Result : Any>(
         return this
     }
 
-    fun reducer(func: suspend IntentContext<State, Result>.() -> State): IntentBuilder<State, Result> {
+    fun reducer(func: IntentContext<State, Result>.() -> State): IntentBuilder<State, Result> {
         reducer = { result: Result?, state ->
             IntentContext(state, result).func()
         }
@@ -260,12 +260,12 @@ data class IntentContext<State : Any, Result>(
 fun <State : Any, Result : Any> Intent3<State, Result>.rebuild(
     buildFun: IntentBuilder<State, Result>.(Intent3<State, Result>) -> Unit
 ) = IntentBuilder(
-        onTrigger = onTrigger,
-        cancelTrigger = cancelTrigger,
-        reducer = reducer,
-        sideEffect = sideEffect,
-        runSideEffectAfterCancel = runSideEffectAfterCancel
-    ).apply { buildFun(this@rebuild) }.build()
+    onTrigger = onTrigger,
+    cancelTrigger = cancelTrigger,
+    reducer = reducer,
+    sideEffect = sideEffect,
+    runSideEffectAfterCancel = runSideEffectAfterCancel
+).apply { buildFun(this@rebuild) }.build()
 
 @Composable
 fun <T : Any> Store3<T>.collectState(
@@ -281,3 +281,30 @@ fun <T : Any> Store3<T>.collectState(
     }
     return state
 }
+
+fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.map(
+    stateReducer: IntentContext<OutState, Result>.((result: Result?, state: InState) -> InState) -> OutState,
+    stateMapper: (OutState) -> InState?
+): Intent3<OutState, Result> =
+    let { inner ->
+        Intent3(
+            onTrigger = { state -> stateMapper(state)?.let { inner.onTrigger(it) } },
+            cancelTrigger = inner.cancelTrigger?.let { cancelTrigger ->
+                { result, state ->
+                    stateMapper(state)?.let { cancelTrigger(result, it) } ?: false
+                }
+            },
+            reducer = { result, state ->
+                IntentContext(
+                    state,
+                    result
+                ).run { stateReducer(inner.reducer) }
+            },
+            sideEffect = inner.sideEffect?.let { sideEffect ->
+                { result, state ->
+                    stateMapper(state)?.let { sideEffect(result, it) }
+                }
+            },
+            runSideEffectAfterCancel = inner.runSideEffectAfterCancel
+        )
+    }
