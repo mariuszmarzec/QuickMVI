@@ -119,10 +119,8 @@ open class Store3<State : Any>(
         intent: Intent3<State, Result>,
         jobId: String
     ): Job = scope.launch(start = CoroutineStart.LAZY) {
+        val flow = intent.onTrigger(_state.value) ?: flowOf(null)
 
-        val flow = withContext(stateThread) {
-            (intent.onTrigger(_state.value) ?: flowOf(null))
-        }
         flow.collect { result ->
             processTriggeredValue(intent, result, jobId)
         }
@@ -133,9 +131,8 @@ open class Store3<State : Any>(
         result: Result?,
         jobId: String
     ) {
-        val shouldCancel = withContext(stateThread) {
-            intent.cancelTrigger?.invoke(result, _state.value)
-        } ?: false
+        val shouldCancel = intent.cancelTrigger?.invoke(result, _state.value) ?: false
+
         if (shouldCancel) {
             runCancellationAndSideEffectIfNeeded(result, intent, jobId)
         } else {
@@ -143,8 +140,8 @@ open class Store3<State : Any>(
                 val oldStateValue = _state.value
                 _state.update { intent.reducer(result, oldStateValue) }
                 onNewState(_state.value)
-                intent.sideEffect?.invoke(result, _state.value)
             }
+            intent.sideEffect?.invoke(result, _state.value)
         }
     }
 
