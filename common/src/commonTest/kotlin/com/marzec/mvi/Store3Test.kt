@@ -192,6 +192,33 @@ class Store3Test {
         }
 
         val mappedIntent = innerIntent.map<Result<Int>, Int, Int>(
+            stateReducer = { newInState: Int ->
+                state.map { newInState }
+            },
+            stateMapper = { it.getOrNull() }
+        )
+
+        store.run(mappedIntent)
+
+        values.isEqualTo(
+            Result.success(1),
+            Result.success(2)
+        )
+        assertEquals(20, sideValue)
+    }
+
+    @Test
+    fun `run mapped intent with access to inner reducer`() = runStoreTest(Result.success(1)) {
+        var sideValue = 0
+        val innerIntent = intent<Int, Int> {
+            onTrigger { flowOf(state * 2) }
+
+            reducer { resultNonNull() }
+
+            sideEffect { sideValue = state * 10 }
+        }
+
+        val mappedIntent = innerIntent.mapInnerReducer<Result<Int>, Int, Int>(
             stateReducer = { innerReducer ->
                 state.map { innerReducer(resultNonNull(), it) }
             },
@@ -206,6 +233,7 @@ class Store3Test {
         )
         assertEquals(20, sideValue)
     }
+
     @Test
     fun `run composite intent`() = runStoreTest(10) {
         val sideValues = mutableListOf<String>()

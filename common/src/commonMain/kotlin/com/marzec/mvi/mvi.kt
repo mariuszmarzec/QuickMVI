@@ -280,6 +280,38 @@ fun <T : Any> Store3<T>.collectState(
 }
 
 fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.map(
+    stateReducer: IntentContext<OutState, Result>.(newInState: InState) -> OutState,
+    stateMapper: (OutState) -> InState?,
+    setUp: IntentBuilder<OutState, Result>.(innerIntent: Intent3<InState, Result>) -> Unit = { }
+): Intent3<OutState, Result> =
+    let { inner ->
+        intent {
+            onTrigger { stateMapper(state)?.let { inner.onTrigger(it) } }
+
+            cancelTrigger(inner.runSideEffectAfterCancel) {
+                inner.cancelTrigger?.let { cancelTrigger ->
+                    stateMapper(state)?.let { cancelTrigger(result, it) } ?: false
+                } ?: false
+            }
+
+            reducer {
+                stateMapper(state)?.let { newInState ->
+                    stateReducer(inner.reducer(resultNonNull(), newInState))
+                } ?: state
+
+            }
+
+            sideEffect {
+                inner.sideEffect?.let { sideEffect ->
+                    stateMapper(state)?.let { sideEffect(result, it) }
+                }
+            }
+
+            setUp(inner)
+        }
+    }
+
+fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.mapInnerReducer(
     stateReducer: IntentContext<OutState, Result>.((result: Result?, state: InState) -> InState) -> OutState,
     stateMapper: (OutState) -> InState?,
     setUp: IntentBuilder<OutState, Result>.(innerIntent: Intent3<InState, Result>) -> Unit = { }
@@ -311,4 +343,4 @@ fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.map(
 fun <State : Any, Result : Any> Intent3<State, Result>.composite(
     setUp: IntentBuilder<State, Result>.(innerIntent: Intent3<State, Result>) -> Unit = { }
 ): Intent3<State, Result> =
-    map(stateReducer = { it(result, state) }, stateMapper = { it }, setUp = setUp)
+    map(stateReducer = { it }, stateMapper = { it }, setUp = setUp)
