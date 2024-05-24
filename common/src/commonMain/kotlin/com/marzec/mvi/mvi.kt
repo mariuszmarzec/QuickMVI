@@ -296,7 +296,7 @@ fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.map(
 
             reducer {
                 stateMapper(state)?.let { newInState ->
-                    stateReducer(inner.reducer(resultNonNull(), newInState))
+                    stateReducer(inner.reducer(result, newInState))
                 } ?: state
 
             }
