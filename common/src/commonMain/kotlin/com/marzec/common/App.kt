@@ -59,11 +59,9 @@ data class TimersState(
 )
 
 @Composable
-fun App() {
+fun App(scope: CoroutineScope = rememberCoroutineScope(), tickerCounter: TickerCounterStore = TickerCounterStore(scope)) {
 
-    val scope = rememberCoroutineScope()
     val store = TimersStore(scope)
-    val tickerCounter = TickerCounterStore(scope)
     val textStore = Store(scope, "")
     val autoCancelStore = Store(scope, 0)
 

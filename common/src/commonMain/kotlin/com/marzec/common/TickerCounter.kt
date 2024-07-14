@@ -7,12 +7,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.marzec.mvi.Store
 import com.marzec.mvi.Store4
 import com.marzec.mvi.Store4Impl
 import com.marzec.mvi.collectState
 import kotlinx.coroutines.CoroutineScope
 
-class TickerCounterStore(scope: CoroutineScope) : Store4Impl<Int>(scope, 0) {
+fun TickerCounterStore(scope: CoroutineScope) = TickerCounterStore(Store(scope, defaultState = 0))
+
+class TickerCounterStore(store: Store4<Int>) : Store4<Int> by store {
 
     fun bumpCounter() = intent<Int> {
 
