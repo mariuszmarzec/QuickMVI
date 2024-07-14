@@ -20,9 +20,9 @@ class Store3Test {
 
     @Test
     fun `checks if trigger, state is updated in classic way`() = scope.runTest {
-        Store3.stateThread = dispatcher
+        Store4Impl.stateThread = dispatcher
 
-        val store = Store3<List<Int>>(scope, listOf(0))
+        val store = Store<List<Int>>(scope, listOf(0))
         val states = mutableListOf<Any>()
 
         val job = launch(dispatcher) { store.state.toCollection(states) }

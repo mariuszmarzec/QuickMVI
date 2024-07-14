@@ -36,7 +36,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.marzec.mvi.Store3
+import com.marzec.mvi.Store
+import com.marzec.mvi.Store4
+import com.marzec.mvi.Store4Impl
 import com.marzec.mvi.collectState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,8 +64,8 @@ fun App() {
     val scope = rememberCoroutineScope()
     val store = TimersStore(scope)
     val tickerCounter = TickerCounterStore(scope)
-    val textStore = Store3(scope, "")
-    val autoCancelStore = Store3(scope, 0)
+    val textStore = Store(scope, "")
+    val autoCancelStore = Store(scope, 0)
 
     Column {
         Timers(store)
@@ -120,7 +122,7 @@ private fun Timers(store: TimersStore) {
     }
 }
 
-class TimersStore(scope: CoroutineScope) : Store3<TimersState>(scope, TimersState()) {
+class TimersStore(scope: CoroutineScope) : Store4Impl<TimersState>(scope, TimersState()) {
 
     fun startSlowTimer() = intent<TimerEvent>(INTENT_SLOW_TIMER_ID) {
         onTrigger {
@@ -265,7 +267,7 @@ private fun timer(timeInMillis: Long) = flow {
 }
 
 @Composable
-private fun TextFieldExample(store: Store3<String>) {
+private fun TextFieldExample(store: Store4<String>) {
 
     val state = store.state.collectAsState(Dispatchers.Default)
 
@@ -344,7 +346,7 @@ fun TextFieldStateful(
 }
 
 @Composable
-fun AutoCancelExample(autoCancelStore: Store3<Int>) {
+fun AutoCancelExample(autoCancelStore: Store4<Int>) {
     val lastValue = 10
     val state = autoCancelStore.state.collectAsState()
 
