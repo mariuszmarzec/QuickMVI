@@ -14,6 +14,7 @@ repositories {
 dependencies {
     implementation(project(":common"))
     implementation("androidx.activity:activity-compose:1.4.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel:2.0.0")
 }
 
 android {

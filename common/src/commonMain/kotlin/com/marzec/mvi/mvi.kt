@@ -5,8 +5,19 @@ package com.marzec.mvi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.experimental.ExperimentalTypeInference
@@ -15,8 +26,9 @@ import kotlin.random.Random
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <State : Any> Store(
     scope: CoroutineScope,
-    defaultState: State
-) = Store4Impl(scope, defaultState)
+    defaultState: State,
+    onNewStateCallback: (State) -> Unit = { }
+) = Store4Impl(scope, defaultState, onNewStateCallback)
 
 interface Store4<State : Any> {
 
@@ -54,7 +66,8 @@ interface Store4<State : Any> {
 @ExperimentalCoroutinesApi
 open class Store4Impl<State : Any>(
     private val scope: CoroutineScope,
-    private val defaultState: State
+    private val defaultState: State,
+    private val onNewStateCallback: (State) -> Unit = {}
 ) : Store4<State> {
 
     private var _state = MutableStateFlow(defaultState)
@@ -74,7 +87,9 @@ open class Store4Impl<State : Any>(
         jobs.forEach { it.value.cancelJob() }
     }
 
-    override suspend fun onNewState(newState: State) = Unit
+    override suspend fun onNewState(newState: State) {
+        onNewStateCallback(newState)
+    }
 
     override fun <Result : Any> intent(id: String?, @BuilderInference buildFun: IntentBuilder<State, Result>.() -> Unit) {
         intentByBuilderInternal(id, buildFun)
