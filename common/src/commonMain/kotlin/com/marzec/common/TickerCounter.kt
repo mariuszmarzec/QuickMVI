@@ -16,7 +16,9 @@ fun TickerCounterStore(
     scope: CoroutineScope,
     defaultState: Int = 0,
     onNewStateCallback: (Int) -> Unit = {}
-) = TickerCounterStore(Store(scope, defaultState, onNewStateCallback))
+) = TickerCounterStore(Store(scope, defaultState).apply {
+    this.onNewStateCallback = onNewStateCallback
+})
 
 class TickerCounterStore(
     private val store: Store4<Int>
