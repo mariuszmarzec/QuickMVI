@@ -96,6 +96,50 @@ You can also cancel actions with method `fun cancel(vararg ids: String)` as belo
     }
 ```
 
+## Store Delegate
+
+Logic inside intent could be extracted into separate classes and reuse in more than one store.
+
+1. Declare common interface for delegated methods:
+    ```kotlin
+   interface TestDelegate {
+
+        fun doThings()
+    }
+    ```
+2. Implement new interface and open class StoreDelegate:
+   ```kotlin
+    class TestDelegateImpl : StoreDelegate<Int>(), TestDelegate {
+    
+        override fun doThings() = intent<Int> {
+            onTrigger { flowOf(1, 2, 3) }
+    
+            reducer { state * 10 + resultNonNull() }
+        }
+    }
+    ```
+3. Make your store implement your interface and implement methods by delegation in your store. Using delegate extension
+install delegate in store
+
+   ```kotlin
+    class TestStore(
+        scope: CoroutineScope,
+        defaultState: Int,
+        testDelegate: TestDelegate
+    ) : Store4Impl<Int>(scope, defaultState), TestDelegate by testDelegate {
+
+        init {
+            delegates(testDelegate)
+        }
+    }
+   
+    // ...
+     val store = TestStore(scope, 0, TestDelegateImpl())
+
+     store.doThings()
+   ```
+
 For more use cases check:
  - Timers' code [App.kt](common/src/commonMain/kotlin/com/marzec/common/App.kt)
  - Test cases code [Store3Test.kt](common/src/commonTest/kotlin/com/marzec/mvi/Store3Test.kt)
+ - Test cases code [StoreDelegateTest.kt](common/src/commonTest/kotlin/com/marzec/mvi/StoreDelegateTest.kt)
