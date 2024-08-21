@@ -404,3 +404,31 @@ fun <State : Any, Result : Any> Intent3<State, Result>.composite(
     setUp: IntentBuilder<State, Result>.(innerIntent: Intent3<State, Result>) -> Unit = { }
 ): Intent3<State, Result> =
     map(stateReducer = { it }, stateMapper = { it }, setUp = setUp)
+
+@OptIn(ExperimentalTypeInference::class)
+open class StoreDelegate<State : Any> {
+
+    private lateinit var store: Store4<State>
+
+    open fun init(store: Store4<State>) {
+        this.store = store
+    }
+
+    protected fun <RESULT : Any> intent(@BuilderInference buildFun: IntentBuilder<State, RESULT>.() -> Unit): Unit =
+        store.intent(buildFun)
+
+    protected fun <Result : Any> run(intent: Intent3<State, Result>) {
+        store.run(intent)
+    }
+
+    protected fun sideEffectIntent(
+        func: suspend IntentContext<State, Unit>.() -> Unit
+    ) = store.sideEffectIntent(func)
+}
+
+@Suppress("unchecked_cast")
+fun <STATE : Any> Store4<STATE>.delegates(vararg delegates: Any) {
+    delegates.forEach {
+        (it as StoreDelegate<STATE>).init(this@delegates)
+    }
+}
