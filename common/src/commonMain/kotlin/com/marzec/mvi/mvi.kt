@@ -49,18 +49,8 @@ interface Store4<State : Any> {
     fun <Result : Any> intent(builder: IntentBuilder<State, Result>)
     fun <Result : Any> triggerIntent(func: suspend IntentContext<State, Result>.() -> Flow<Result>?)
 
-    @Deprecated("Will be removed", replaceWith = ReplaceWith("triggerIntent(func)"))
-    fun <Result : Any> onTrigger(
-        @BuilderInference func: suspend IntentContext<State, Result>.() -> Flow<Result>? = { null }
-    ): IntentBuilder<State, Result>
-
     fun reducerIntent(func: IntentContext<State, Unit>.() -> State)
 
-    @Deprecated("Will be removed", replaceWith = ReplaceWith("reducerIntent(func)"))
-    fun reduce(func: IntentContext<State, Unit>.() -> State): IntentBuilder<State, Unit>
-
-    @Deprecated("Will be removed", replaceWith = ReplaceWith("sideEffectIntent(func)"))
-    fun sideEffect(func: suspend IntentContext<State, Unit>.() -> Unit)
     fun sideEffectIntent(func: suspend IntentContext<State, Unit>.() -> Unit)
     fun <Result : Any> run(intent: Intent3<State, Result>)
     fun <Result : Any> run(id: String?, intent: Intent3<State, Result>)
@@ -117,25 +107,8 @@ open class Store4Impl<State : Any>(
         intentByBuilderInternal<Result> { onTrigger(func) }
     }
 
-    @Deprecated("Will be removed", replaceWith = ReplaceWith("triggerIntent(func)"))
-    override fun <Result : Any> onTrigger(
-        @BuilderInference func: suspend IntentContext<State, Result>.() -> Flow<Result>?
-    ): IntentBuilder<State, Result> {
-        return IntentBuilder<State, Result>().apply { onTrigger(func) }
-    }
-
     override fun reducerIntent(func: IntentContext<State, Unit>.() -> State) {
         intentByBuilderInternal<Unit> { reducer(func) }
-    }
-
-    @Deprecated("Will be removed", replaceWith = ReplaceWith("reducerIntent(func)"))
-    override fun reduce(func: IntentContext<State, Unit>.() -> State): IntentBuilder<State, Unit> {
-        return IntentBuilder<State, Unit>().apply { reducer(func) }
-    }
-
-    @Deprecated("Will be removed", replaceWith = ReplaceWith("sideEffectIntent(func)"))
-    override fun sideEffect(func: suspend IntentContext<State, Unit>.() -> Unit) {
-        intentByBuilderInternal<Unit> { sideEffect(func) }
     }
 
     override fun sideEffectIntent(func: suspend IntentContext<State, Unit>.() -> Unit) {
