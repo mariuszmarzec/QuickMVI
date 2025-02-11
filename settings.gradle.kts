@@ -14,4 +14,5 @@ rootProject.name = "QuickMVI"
 include(":android")
 include(":desktop")
 include(":common")
+include(":lib")
 
