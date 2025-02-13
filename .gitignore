@@ -34,6 +34,24 @@ hs_err_pid*
 .idea/**/dictionaries
 .idea/**/shelf
 
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/dataSources/
+.idea/dataSources.local.xml
+.idea/httpRequests/
+.idea/sonarlint/
+.idea/coverage/
+.idea/modules.xml
+.idea/vcs.xml
+.idea/deployment.xml
+.idea/phpstorm.meta.php
+.idea/jsLibraryMappings.xml
+.idea/webServers.xml
+.idea/uiDesigner.xml
+.idea/assetWizardSettings.xml
+.idea/artifacts/**
 # Generated files
 .idea/**/contentModel.xml
 
