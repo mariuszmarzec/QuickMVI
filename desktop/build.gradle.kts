@@ -3,7 +3,8 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.compose") version "1.4.0"
+    id("org.jetbrains.compose")
+    id("io.gitlab.arturbosch.detekt")
 }
 
 group = "com.marzec"
@@ -35,4 +36,12 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+detekt {
+    source = files(
+        "src/main/kotlin"
+    )
+
+    config = files("../config/detekt/detekt.yml")
 }

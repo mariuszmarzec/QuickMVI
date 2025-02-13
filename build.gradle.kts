@@ -6,11 +6,11 @@ buildscript {
         mavenCentral()
     }
 
-    val kotlinVersion = "1.8.20"
-    
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath("com.android.tools.build:gradle:7.4.2")
+        classpath(libs.plugin.kotlinGradle)
+        classpath(libs.plugin.androidBuild)
+        classpath(libs.plugin.detekt)
+        classpath(libs.plugin.composeGradle)
     }
 }
 

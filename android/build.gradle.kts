@@ -1,7 +1,8 @@
 plugins {
-    id("org.jetbrains.compose") version "1.4.0"
+    id("org.jetbrains.compose")
     id("com.android.application")
     kotlin("android")
+    id("io.gitlab.arturbosch.detekt")
 }
 
 group = "com.marzec"
@@ -13,16 +14,18 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("androidx.activity:activity-compose:1.4.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel:2.0.0")
+    implementation(libs.androidActivityX)
+    implementation(libs.viewModel)
 }
 
 android {
-    compileSdkVersion(33)
+    namespace = "com.marzec.quickmvi.sample"
+
+    compileSdk = libs.versions.compileSdk.get().toInt()
     defaultConfig {
-        applicationId = "com.marzec.android"
-        minSdkVersion(30)
-        targetSdkVersion(33)
+        applicationId = "com.marzec.quickmvi.sample"
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
     }
@@ -35,4 +38,12 @@ android {
             isMinifyEnabled = false
         }
     }
+}
+
+detekt {
+    source = files(
+        "src/main/kotlin"
+    )
+
+    config = files("../config/detekt/detekt.yml")
 }

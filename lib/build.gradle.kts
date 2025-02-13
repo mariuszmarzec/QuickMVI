@@ -2,8 +2,9 @@ import org.jetbrains.compose.compose
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.compose") version "1.4.0"
+    id("org.jetbrains.compose")
     id("com.android.library")
+    id("io.gitlab.arturbosch.detekt")
 }
 
 group = "com.marzec"
@@ -29,19 +30,19 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.1")
-                implementation("io.mockk:mockk-common:1.12.4")
+                implementation(libs.coroutineTest)
+                implementation(libs.mockk)
             }
         }
         val androidMain by getting {
             dependencies {
-                api("androidx.appcompat:appcompat:1.6.1")
-                api("androidx.core:core-ktx:1.10.0")
+                api(libs.androidxAppCompat)
+                api(libs.androidxCoreKtx)
             }
         }
-        val androidTest by getting {
+        val androidUnitTest by getting {
             dependencies {
-                implementation("junit:junit:4.13.2")
+                implementation(libs.junit4)
             }
         }
         val desktopMain by getting {
@@ -51,21 +52,33 @@ kotlin {
         }
         val desktopTest by getting {
             dependencies {
-                implementation("io.mockk:mockk:1.12.4")
+                implementation(libs.mockkJvm)
             }
         }
     }
 }
 
 android {
-    compileSdkVersion(33)
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
+    namespace = "com.marzec.quickmvi"
+
+    compileSdk = libs.versions.compileSdk.get().toInt()
     defaultConfig {
-        minSdkVersion(30)
-        targetSdkVersion(33)
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
     }
+
+    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+detekt {
+    source = files(
+        "src/main/kotlin"
+    )
+
+    config = files("../config/detekt/detekt.yml")
 }
