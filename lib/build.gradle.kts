@@ -5,7 +5,7 @@ plugins {
     id("org.jetbrains.compose")
     id("com.android.library")
     id("io.gitlab.arturbosch.detekt")
-    id("com.vanniktech.maven.publish") version "0.28.0"
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
 group = "com.marzec"
