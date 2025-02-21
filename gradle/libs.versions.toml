@@ -15,6 +15,7 @@ mockk = "1.13.2"
 mockkCommon = "1.12.5"
 viewModel = "2.0.0"
 junit="4.13.2"
+jacoco = "0.8.12"
 
 composePlugin = "1.7.1"
 

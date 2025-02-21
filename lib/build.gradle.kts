@@ -6,7 +6,13 @@ plugins {
     id("com.android.library")
     id("io.gitlab.arturbosch.detekt")
     id("com.vanniktech.maven.publish") version "0.30.0"
+    jacoco
 }
+
+jacoco {
+    toolVersion = libs.versions.jacoco.get().toString()
+}
+apply(from = "jacoco.gradle.kts")
 
 group = "com.marzec"
 version = "1.0"
