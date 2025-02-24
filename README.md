@@ -8,6 +8,21 @@ based projects or android
 
 ## Quick start
 
+Add dependency in gradle:
+
+```kotlin
+repositories {
+   mavenCentral()
+}
+//   ...
+dependencies {
+    // ...
+   implementation("io.github.mariuszmarzec:quickmvi:1.0.0")
+   // ...
+}
+```
+
+
 I'm not going to publish it anywhere now, if you want to use it, 
 copy to your project, just [mvi.kt](common/src/commonMain/kotlin/com.marzec.mvi/mvi.kt) file.
 
