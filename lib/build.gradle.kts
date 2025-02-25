@@ -9,10 +9,10 @@ plugins {
     jacoco
 }
 
+apply(from = "jacoco.gradle.kts")
 jacoco {
     toolVersion = libs.versions.jacoco.get().toString()
 }
-apply(from = "jacoco.gradle.kts")
 
 group = "com.marzec"
 version = "1.0"
@@ -39,6 +39,16 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
                 implementation(libs.coroutineTest)
                 implementation(libs.mockk)
+            }
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.mockkAndroid)
+            }
+        }
+        val desktopTest by getting {
+            dependencies {
+                implementation(libs.mockkJvm)
             }
         }
     }

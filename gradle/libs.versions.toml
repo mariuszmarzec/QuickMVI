@@ -27,6 +27,7 @@ androidxCoreKtx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidxAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "appCompat" }
 viewModel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "viewModel" }
 mockk = { module = "io.mockk:mockk-common", version.ref = "mockkCommon" }
+mockkAndroid = { module = "io.mockk:mockk-android", version.ref = "mockkCommon" }
 mockkJvm = { module = "io.mockk:mockk", version.ref = "mockk" }
 junit4 = { module = "junit:junit", version.ref = "junit" }
 
