@@ -38,7 +38,7 @@ kotlin {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation(libs.coroutineTest)
-                implementation(libs.mockk)
+                implementation(libs.mockkCommon)
             }
         }
         val androidUnitTest by getting {
