@@ -43,6 +43,7 @@ kotlin {
         }
         val androidUnitTest by getting {
             dependencies {
+                implementation(libs.mockkAndroid)
                 implementation(libs.junit4)
             }
         }
