@@ -7,44 +7,70 @@ on:
   pull_request:
     branches:
       - master
+      - develop
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up JDK
-      uses: actions/setup-java@v1
-      with:
-        java-version: 17
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
 
-    - name: Detekt
-      run: ./gradlew detekt
+      - name: Detekt
+        run: ./gradlew detekt
 
-    - name: Build with Gradle
-      run: ./gradlew lib:build
+      - name: Build with Gradle
+        run: ./gradlew lib:build
 
-    - name: unit tests
-      run: ./gradlew testDebugUnitTest
+      - name: unit tests
+        run: ./gradlew testDebugUnitTest
 
-    - name: Upload artifact on tests failure
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: Unit test report
-        path: '**/build/reports/tests/**'
+      - name: Upload artifact on tests failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unit test report
+          path: '**/build/reports/tests/**'
 
-    - name: Coverage report
-      run: ./gradlew jacocoTestCoverageVerification
+      - name: Coverage report
+        run: ./gradlew jacocoTestCoverageVerification
 
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v4
-      with:
-        name: UI Tests report
-        path: '**/app/build/reports/jacoco/**'
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: UI Tests report
+          path: '**/app/build/reports/jacoco/**'
 
-    - name: Log success message
-      run: echo "Build finished successfully"
+      - name: Log success message
+        run: echo "Build finished successfully"
+
+      - name: Add Gradle Properties
+        if: github.ref == 'refs/heads/master'
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          $GPG_SECRET_KEYRING: ${{ secrets.$GPG_SECRET_KEYRING }}
+        run: |
+          echo "mavenCentralUsername=${MAVEN_CENTRAL_USERNAME}" >> gradle.properties
+          echo "mavenCentralPassword=${MAVEN_CENTRAL_PASSWORD}" >> gradle.properties
+          echo "signing.keyId=${SIGNING_KEY_ID}" >> gradle.properties
+          echo "signing.password=${SIGNING_KEY_PASSWORD}" >> gradle.properties
+          echo "signing.secretKeyRingFile=${HOME}/secring.gpg" >> gradle.properties
+          echo "$GPG_SECRET_KEYRING" | base64 --decode > ${HOME}/secring.gpg
+
+      - name: Publish To Maven Central
+        if: github.ref == 'refs/heads/master'
+        run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
+
+      - name: Clean up GPG keyring
+        if: github.ref == 'refs/heads/master'
+        run: rm -f ${HOME}/secring.gpg
+        shell: bash
