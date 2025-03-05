@@ -14,8 +14,8 @@ jacoco {
     toolVersion = libs.versions.jacoco.get().toString()
 }
 
-group = "com.marzec"
-version = "1.0"
+group = "io.github.mariuszmarzec"
+version = "1.0.0"
 
 kotlin {
     android()
@@ -81,9 +81,9 @@ detekt {
 
 mavenPublishing {
     coordinates(
-        groupId = "io.github.mariuszmarzec",
+        groupId = project.group.toString(),
         artifactId = "quickmvi",
-        version = "1.0.0"
+        version = project.version.toString()
     )
 
     // Configure POM metadata for the published artifact
