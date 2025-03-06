@@ -15,7 +15,7 @@ jacoco {
 }
 
 group = "io.github.mariuszmarzec"
-version = "1.0.0"
+version = "1.1.0-RC1"
 
 kotlin {
     android()
