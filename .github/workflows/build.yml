@@ -51,8 +51,15 @@ jobs:
       - name: Log success message
         run: echo "Build finished successfully"
 
+      - name: Check if should publish to maven
+        run: echo "SHOULD_PUBLISH=$([[ $GITHUB_REF == 'refs/heads/master' && $GITHUB_REF == 'refs/heads/develop' ]] && echo true || echo false)" >> $GITHUB_ENV
+
+      - name: Check if should publish snapshot
+        if: env.SHOULD_PUBLISH == 'true' && $GITHUB_REF == 'refs/heads/develop'
+        run: echo "SNAPSHOT=" >> $GITHUB_ENV
+
       - name: Add Gradle Properties
-        if: github.ref == 'refs/heads/master'
+        if: env.SHOULD_PUBLISH == 'true'
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
@@ -68,10 +75,10 @@ jobs:
           echo "$GPG_SECRET_KEYRING" | base64 --decode > ${HOME}/secring.gpg
 
       - name: Publish To Maven Central
-        if: github.ref == 'refs/heads/master'
+        if: env.SHOULD_PUBLISH == 'true'
         run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
 
       - name: Clean up GPG keyring
-        if: github.ref == 'refs/heads/master'
+        if: env.SHOULD_PUBLISH == 'true'
         run: rm -f ${HOME}/secring.gpg
         shell: bash
