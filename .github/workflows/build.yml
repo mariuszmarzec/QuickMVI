@@ -57,8 +57,9 @@ jobs:
         run: echo SHOULD_PUBLISH=$SHOULD_PUBLISH
 
       - name: Check if should publish snapshot
+        if: env.SHOULD_PUBLISH == 'true'
         env:
-          SNAPSHOT: ${{ env.SHOULD_PUBLISH && 'true' || 'false' }}
+          SNAPSHOT: ${{ github.ref == 'refs/heads/develop' && 'true' || 'false' }}
         run: echo SNAPSHOT=$SNAPSHOT
 
       - name: Add Gradle Properties
