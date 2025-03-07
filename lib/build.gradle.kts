@@ -80,7 +80,7 @@ detekt {
 }
 
 mavenPublishing {
-    val postFix = "-SNAPSHOT".takeIf { System.getenv("SNAPSHOT") != null }.orEmpty()
+    val postFix = "-SNAPSHOT".takeIf { System.getenv("SNAPSHOT").toBoolean() }.orEmpty()
     coordinates(
         groupId = project.group.toString(),
         artifactId = "quickmvi",
