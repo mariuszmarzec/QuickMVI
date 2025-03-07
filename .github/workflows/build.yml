@@ -52,10 +52,10 @@ jobs:
         run: echo "Build finished successfully"
 
       - name: Check if should publish to maven
-        run: echo "SHOULD_PUBLISH=$([[ $GITHUB_REF == 'refs/heads/master' && $GITHUB_REF == 'refs/heads/develop' ]] && echo true || echo false)" >> $GITHUB_ENV
+        run: echo "SHOULD_PUBLISH=$([[ github.ref == 'refs/heads/master' && github.ref == 'refs/heads/develop' ]] && echo true || echo false)" >> $GITHUB_ENV
 
       - name: Check if should publish snapshot
-        if: env.SHOULD_PUBLISH == 'true' && $GITHUB_REF == 'refs/heads/develop'
+        if: env.SHOULD_PUBLISH == 'true' && github.ref == 'refs/heads/develop'
         run: echo "SNAPSHOT=" >> $GITHUB_ENV
 
       - name: Add Gradle Properties
