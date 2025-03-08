@@ -52,18 +52,10 @@ jobs:
         run: echo "Build finished successfully"
 
       - name: Check if should publish to maven
-        env:
-          SHOULD_PUBLISH: ${{ (github.ref != 'refs/heads/master' || github.ref != 'refs/heads/develop' || github.ref != 'refs/heads/pulls/6/merge') && 'true' || 'false' }}
-          GIT_REF: ${{ github.ref }}
         run: |
-          echo SHOULD_PUBLISH=$SHOULD_PUBLISH
-          echo GIT_REF=$GIT_REF
-
-      - name: Check if should publish snapshot
-        if: env.SHOULD_PUBLISH == 'true'
-        env:
-          SNAPSHOT: ${{ github.ref != 'refs/heads/master' && 'true' || 'false' }}
-        run: echo SNAPSHOT=$SNAPSHOT
+          SHOULD_PUBLISH=$([[ "${{ github.ref }}" == "refs/heads/master" || "${{ github.ref }}" == "refs/heads/develop" || "${{ github.ref }}" == "refs/heads/pulls/6/merge" ]] && echo "true" || echo "false")
+          echo "SHOULD_PUBLISH=$SHOULD_PUBLISH" >> $GITHUB_ENV
+          echo "SHOULD_PUBLISH=$SHOULD_PUBLISH"
 
       - name: Add Gradle Properties
         if: env.SHOULD_PUBLISH == 'true'
@@ -83,6 +75,8 @@ jobs:
 
       - name: Publish To Maven Central
         if: env.SHOULD_PUBLISH == 'true'
+        env:
+          SNAPSHOT: ${{ github.ref != 'refs/heads/master' && 'true' || 'false' }}
         run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
 
       - name: Clean up GPG keyring
