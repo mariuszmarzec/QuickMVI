@@ -53,7 +53,7 @@ jobs:
 
       - name: Check if should publish to maven
         env:
-          SHOULD_PUBLISH: ${{ (github.ref != 'refs/heads/master' || github.ref != 'refs/heads/develop') && 'true' || 'false' }}
+          SHOULD_PUBLISH: ${{ (github.ref != 'refs/heads/master' || github.ref != 'refs/heads/develop' || github.ref != 'refs/heads/pulls/6/merge') && 'true' || 'false' }}
           GIT_REF: ${{ github.ref }}
         run: |
           echo SHOULD_PUBLISH=$SHOULD_PUBLISH
