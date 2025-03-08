@@ -53,7 +53,7 @@ jobs:
 
       - name: Check if should publish to maven
         env:
-          SHOULD_PUBLISH: ${{ (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/feature/test_deploy') && 'true' || 'false' }}
+          SHOULD_PUBLISH: ${{ (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/pull/6/head') && 'true' || 'false' }}
         run: echo SHOULD_PUBLISH=$SHOULD_PUBLISH
 
       - name: Check if should publish snapshot
