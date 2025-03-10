@@ -52,15 +52,9 @@ jobs:
         run: echo "Build finished successfully"
 
       - name: Check if should publish to maven
-        env:
-          SHOULD_PUBLISH: ${{ (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop') && 'true' || 'false' }}
-        run: echo SHOULD_PUBLISH=$SHOULD_PUBLISH
-
-      - name: Check if should publish snapshot
-        if: env.SHOULD_PUBLISH == 'true'
-        env:
-          SNAPSHOT: ${{ github.ref == 'refs/heads/develop' && 'true' || 'false' }}
-        run: echo SNAPSHOT=$SNAPSHOT
+        run: |
+          SHOULD_PUBLISH=$([[ "${{ github.ref }}" == "refs/heads/master" || "${{ github.ref }}" == "refs/heads/develop" ]] && echo "true" || echo "false")
+          echo "SHOULD_PUBLISH=$SHOULD_PUBLISH" >> $GITHUB_ENV
 
       - name: Add Gradle Properties
         if: env.SHOULD_PUBLISH == 'true'
@@ -69,7 +63,7 @@ jobs:
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          $GPG_SECRET_KEYRING: ${{ secrets.GPG_SECRET_KEYRING }}
+          GPG_SECRET_KEYRING: ${{ secrets.GPG_SECRET_KEYRING }}
         run: |
           echo "mavenCentralUsername=${MAVEN_CENTRAL_USERNAME}" >> gradle.properties
           echo "mavenCentralPassword=${MAVEN_CENTRAL_PASSWORD}" >> gradle.properties
@@ -80,6 +74,8 @@ jobs:
 
       - name: Publish To Maven Central
         if: env.SHOULD_PUBLISH == 'true'
+        env:
+          SNAPSHOT: ${{ github.ref != 'refs/heads/master' && 'true' || 'false' }}
         run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
 
       - name: Clean up GPG keyring

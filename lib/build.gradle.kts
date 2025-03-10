@@ -5,7 +5,7 @@ plugins {
     id("org.jetbrains.compose")
     id("com.android.library")
     id("io.gitlab.arturbosch.detekt")
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("com.vanniktech.maven.publish") version "0.31.0"
     jacoco
 }
 
@@ -15,7 +15,7 @@ jacoco {
 }
 
 group = "io.github.mariuszmarzec"
-version = "1.1.0-RC1"
+version = "1.1.0"
 
 kotlin {
     android()
