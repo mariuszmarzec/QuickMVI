@@ -22,10 +22,6 @@ dependencies {
 }
 ```
 
-
-I'm not going to publish it anywhere now, if you want to use it, 
-copy to your project, just [mvi.kt](common/src/commonMain/kotlin/com.marzec.mvi/mvi.kt) file.
-
 1. Create store, you, pass default state as argument and scope.
 2. Declare intent action as below, in reducer mutate your current state to get new one and update UI.
 3. In sideEffect action you can declare action which will be fired on every triggered update.
