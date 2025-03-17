@@ -9,13 +9,10 @@ plugins {
     jacoco
 }
 
-apply(from = "jacoco.gradle.kts")
+apply(from = "../gradle/jacoco.gradle.kts")
 jacoco {
     toolVersion = libs.versions.jacoco.get().toString()
 }
-
-group = "io.github.mariuszmarzec"
-version = "1.1.0"
 
 kotlin {
     android()
@@ -44,6 +41,11 @@ kotlin {
         val androidUnitTest by getting {
             dependencies {
                 implementation(libs.mockkAndroid)
+            }
+        }
+        val desktopMain by getting {
+            dependencies {
+
             }
         }
         val desktopTest by getting {

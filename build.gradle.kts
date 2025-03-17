@@ -14,8 +14,8 @@ buildscript {
     }
 }
 
-group = "com.marzec"
-version = "1.0"
+group = "io.github.mariuszmarzec"
+version = "1.1.0-RC1"
 
 allprojects {
     repositories {

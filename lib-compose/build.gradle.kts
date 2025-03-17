@@ -1,14 +1,18 @@
-import org.jetbrains.compose.compose
+import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
     id("com.android.library")
     id("io.gitlab.arturbosch.detekt")
+    id("com.vanniktech.maven.publish") version "0.31.0"
+    jacoco
 }
 
-group = "com.marzec"
-version = "1.0"
+apply(from = "../gradle/jacoco.gradle.kts")
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
 
 kotlin {
     android()
@@ -20,8 +24,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(projects.lib)
-                implementation(projects.libCompose)
+                api(projects.lib)
                 api(compose.runtime)
                 api(compose.foundation)
                 api(compose.material)
@@ -36,27 +39,19 @@ kotlin {
                 implementation(libs.mockkCommon)
             }
         }
-        val androidMain by getting {
-            dependencies {
-                api(libs.androidxAppCompat)
-                api(libs.androidxCoreKtx)
-            }
-        }
         val androidUnitTest by getting {
             dependencies {
                 implementation(libs.mockkAndroid)
-                implementation(libs.junit4)
             }
         }
         val desktopMain by getting {
             dependencies {
-                dependsOn(commonMain)
-                api(compose.preview)
+
             }
         }
         val desktopTest by getting {
             dependencies {
-                implementation(libs.mockkJvm)
+                api(projects.lib)
             }
         }
     }
@@ -66,11 +61,13 @@ android {
     namespace = "com.marzec.quickmvi"
 
     compileSdk = libs.versions.compileSdk.get().toInt()
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
     }
+
+    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -83,4 +80,45 @@ detekt {
     )
 
     config = files("../config/detekt/detekt.yml")
+}
+
+mavenPublishing {
+    val postFix = "-SNAPSHOT".takeIf { System.getenv("SNAPSHOT").toBoolean() }.orEmpty()
+    coordinates(
+        groupId = project.group.toString(),
+        artifactId = "quickmvi-compose",
+        version = project.version.toString() + postFix
+    )
+
+    // Configure POM metadata for the published artifact
+    pom {
+        name.set("KMP Library with compose tools for QuickMVI")
+        description.set("Library used for providing compose tools for QuickMVI library")
+        inceptionYear.set("2025")
+        url.set("https://github.com/mariuszmarzec/QuickMVI")
+
+        licenses {
+            license {
+                name.set("Apache 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("mariuszmarzec")
+                name.set("Mariusz Marzec")
+                email.set("mariusz.marzec00@gmail.com")
+            }
+        }
+
+        // Specify SCM information
+        scm {
+            url.set("https://github.com/mariuszmarzec/QuickMVI")
+        }
+    }
+
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+
+    signAllPublications()
 }

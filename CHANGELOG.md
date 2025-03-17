@@ -4,6 +4,7 @@
 
 ### Added
 ### Changed
+- Moved `collectState` method to `lib-compose` artifact.
 ### Fixed
 
 
