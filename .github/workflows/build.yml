@@ -53,7 +53,7 @@ jobs:
 
       - name: Check if should publish to maven
         run: |
-          SHOULD_PUBLISH=$([[ "${{ github.ref }}" == "refs/heads/master" || "${{ github.ref }}" == "refs/heads/develop" ]] && echo "true" || echo "false")
+          SHOULD_PUBLISH=$([[ "${{ github.ref }}" == "refs/heads/master" ]] && echo "true" || echo "false")
           echo "SHOULD_PUBLISH=$SHOULD_PUBLISH" >> $GITHUB_ENV
 
       - name: Add Gradle Properties
