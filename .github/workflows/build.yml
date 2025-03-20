@@ -78,9 +78,9 @@ jobs:
           SNAPSHOT: ${{ github.ref != 'refs/heads/master' && 'true' || 'false' }}
         run: |
           if [ "$SNAPSHOT" == "true" ]; then
-          ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
-          else
           /gradlew publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+          else
+          ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
           fi
 
       - name: Clean up GPG keyring
