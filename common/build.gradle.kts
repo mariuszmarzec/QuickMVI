@@ -2,7 +2,8 @@ import org.jetbrains.compose.compose
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.compose")
+    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.compose.compiler)
     id("com.android.library")
     id("io.gitlab.arturbosch.detekt")
 }
@@ -11,7 +12,7 @@ group = "com.marzec"
 version = "1.0"
 
 kotlin {
-    android()
+    androidTarget()
     jvm("desktop") {
         compilations.all {
             kotlinOptions.jvmTarget = "11"
@@ -20,8 +21,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(projects.lib)
-                implementation(projects.libCompose)
+                api(projects.lib)
+                api(projects.libCompose)
                 api(compose.runtime)
                 api(compose.foundation)
                 api(compose.material)

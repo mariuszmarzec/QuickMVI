@@ -63,7 +63,7 @@ data class TimersState(
 @Composable
 fun App(
     scope: CoroutineScope = rememberCoroutineScope(),
-    tickerCounter: TickerCounterStore = TickerCounterStore(scope)
+    tickerCounter: TickerCounterStore = tickerCounterStore(scope)
 ) {
 
     val store = TimersStore(scope)

@@ -12,7 +12,7 @@ import com.marzec.mvi.Store4
 import com.marzec.mvi.collectState
 import kotlinx.coroutines.CoroutineScope
 
-fun TickerCounterStore(
+fun tickerCounterStore(
     scope: CoroutineScope,
     defaultState: Int = 0,
     onNewStateCallback: (Int) -> Unit = {}

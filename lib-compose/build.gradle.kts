@@ -2,7 +2,9 @@ import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.compose")
+        alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.compose.compiler)
+
     id("com.android.library")
     id("io.gitlab.arturbosch.detekt")
     id("com.vanniktech.maven.publish") version "0.31.0"
@@ -15,7 +17,7 @@ jacoco {
 }
 
 kotlin {
-    android()
+    androidTarget()
     jvm("desktop") {
         compilations.all {
             kotlinOptions.jvmTarget = "11"
@@ -25,9 +27,9 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(projects.lib)
-                api(compose.runtime)
-                api(compose.foundation)
-                api(compose.material)
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material)
             }
         }
         val commonTest by getting {
@@ -51,7 +53,6 @@ kotlin {
         }
         val desktopTest by getting {
             dependencies {
-                api(projects.lib)
             }
         }
     }
