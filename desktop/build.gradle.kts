@@ -3,7 +3,8 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.compose")
+    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.compose.compiler)
     id("io.gitlab.arturbosch.detekt")
 }
 
@@ -19,7 +20,9 @@ kotlin {
     sourceSets {
         val jvmMain by getting {
             dependencies {
-                implementation(project(":common"))
+                implementation(projects.common)
+                implementation(projects.libCompose)
+                implementation(projects.lib)
                 implementation(compose.desktop.currentOs)
             }
         }

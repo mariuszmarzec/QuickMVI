@@ -78,7 +78,7 @@ jobs:
           SNAPSHOT: ${{ github.ref != 'refs/heads/master' && 'true' || 'false' }}
         run: |
           if [ "$SNAPSHOT" == "true" ]; then
-          /gradlew publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+          ./gradlew publishAllPublicationsToMavenCentralRepository --no-configuration-cache
           else
           ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
           fi
