@@ -90,13 +90,4 @@ mavenPublishing {
         artifactId = "quickmvi",
         version = project.version.toString()
     )
-
-    pom {
-        name.set("KMP Library for MVI")
-        description.set("Library used for providing kotlin multiplatform store for state management based on MVI pattern")
-    }
-
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-
-    signAllPublications()
 }

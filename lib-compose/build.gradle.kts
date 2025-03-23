@@ -91,11 +91,7 @@ mavenPublishing {
     )
 
     pom {
-        name.set("KMP Library with compose tools for QuickMVI")
-        description.set("Library used for providing compose tools for QuickMVI library")
+        name.set("")
+        description.set("")
     }
-
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-
-    signAllPublications()
 }
