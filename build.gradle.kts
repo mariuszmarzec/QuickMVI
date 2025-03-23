@@ -20,7 +20,8 @@ buildscript {
 }
 
 group = "io.github.mariuszmarzec"
-version = "1.1.0-RC1"
+val postFix = "-SNAPSHOT".takeIf { System.getenv("SNAPSHOT").toBoolean() }.orEmpty()
+version = "1.1.0" + postFix
 
 allprojects {
     repositories {

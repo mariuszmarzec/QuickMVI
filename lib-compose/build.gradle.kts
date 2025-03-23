@@ -84,11 +84,10 @@ detekt {
 }
 
 mavenPublishing {
-    val postFix = "-SNAPSHOT".takeIf { System.getenv("SNAPSHOT").toBoolean() }.orEmpty()
     coordinates(
         groupId = project.group.toString(),
         artifactId = "quickmvi-compose",
-        version = project.version.toString() + postFix
+        version = project.version.toString()
     )
 
     // Configure POM metadata for the published artifact
