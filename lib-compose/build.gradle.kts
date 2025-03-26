@@ -85,13 +85,8 @@ detekt {
 
 mavenPublishing {
     coordinates(
-        groupId = project.group.toString(),
+        groupId = rootProject.group.toString(),
         artifactId = "quickmvi-compose",
-        version = project.version.toString()
+        version = rootProject.version.toString()
     )
-
-    pom {
-        name.set("")
-        description.set("")
-    }
 }
