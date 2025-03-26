@@ -2,13 +2,9 @@
 
 package com.marzec.mvi
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,12 +14,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.random.Random
 
-@OptIn(ExperimentalCoroutinesApi::class)
 fun <State : Any> Store(
     scope: CoroutineScope,
     defaultState: State,
@@ -296,21 +289,6 @@ fun <State : Any, Result : Any> Intent3<State, Result>.rebuild(
     sideEffect = sideEffect,
     runSideEffectAfterCancel = runSideEffectAfterCancel
 ).apply { buildFun(this@rebuild) }.build()
-
-@Composable
-fun <T : Any> Store4<T>.collectState(
-    context: CoroutineContext = EmptyCoroutineContext,
-    onStoreInitAction: suspend () -> Unit = { }
-): androidx.compose.runtime.State<T> {
-
-    val state = state.collectAsState(state.value, context)
-    LaunchedEffect(key1 = identifier) {
-        init {
-            onStoreInitAction()
-        }
-    }
-    return state
-}
 
 fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.map(
     stateReducer: IntentContext<OutState, Result>.(newInState: InState) -> OutState,

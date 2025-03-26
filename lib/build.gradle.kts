@@ -2,23 +2,22 @@ import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.compose")
+        alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.compose.compiler)
+
     id("com.android.library")
     id("io.gitlab.arturbosch.detekt")
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("com.vanniktech.maven.publish") version "0.31.0"
     jacoco
 }
 
-apply(from = "jacoco.gradle.kts")
+apply(from = "../gradle/jacoco.gradle.kts")
 jacoco {
     toolVersion = libs.versions.jacoco.get().toString()
 }
 
-group = "com.marzec"
-version = "1.0"
-
 kotlin {
-    android()
+    androidTarget()
     jvm("desktop") {
         compilations.all {
             kotlinOptions.jvmTarget = "11"
@@ -44,6 +43,11 @@ kotlin {
         val androidUnitTest by getting {
             dependencies {
                 implementation(libs.mockkAndroid)
+            }
+        }
+        val desktopMain by getting {
+            dependencies {
+
             }
         }
         val desktopTest by getting {
@@ -80,41 +84,10 @@ detekt {
 }
 
 mavenPublishing {
+
     coordinates(
-        groupId = "io.github.mariuszmarzec",
+        groupId = rootProject.group.toString(),
         artifactId = "quickmvi",
-        version = "1.0.0"
+        version = rootProject.version.toString()
     )
-
-    // Configure POM metadata for the published artifact
-    pom {
-        name.set("KMP Library for MVI")
-        description.set("Library used for providing kotlin multiplatform store for state management based on MVI pattern")
-        inceptionYear.set("2025")
-        url.set("https://github.com/mariuszmarzec/QuickMVI")
-
-        licenses {
-            license {
-                name.set("Apache 2.0")
-                url.set("https://www.apache.org/licenses/LICENSE-2.0")
-            }
-        }
-
-        developers {
-            developer {
-                id.set("mariuszmarzec")
-                name.set("Mariusz Marzec")
-                email.set("mariusz.marzec00@gmail.com")
-            }
-        }
-
-        // Specify SCM information
-        scm {
-            url.set("https://github.com/mariuszmarzec/QuickMVI")
-        }
-    }
-
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-
-    signAllPublications()
 }

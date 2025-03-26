@@ -1,5 +1,7 @@
 plugins {
-    id("org.jetbrains.compose")
+    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.compose.compiler)
+
     id("com.android.application")
     kotlin("android")
     id("io.gitlab.arturbosch.detekt")
