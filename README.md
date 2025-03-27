@@ -17,7 +17,9 @@ repositories {
 //   ...
 dependencies {
     // ...
-   implementation("io.github.mariuszmarzec:quickmvi:1.0.0")
+   implementation("io.github.mariuszmarzec:quickmvi:1.1.0")
+   // compose utils
+   implementation("io.github.mariuszmarzec:quickmvi-compose:1.1.0")
    // ...
 }
 ```
@@ -149,6 +151,18 @@ install delegate in store
 
      store.doThings()
    ```
+   
+## QuickMVI - Compose
+### Collecting state
+
+In quickmvi-compose package there is an extension for easy collecting state in compose with initial action could 
+be at screen creation time.
+```kotlin
+    val state: State<TasksScreenState> by store.collectState {
+        store.loadList()
+        store.onScheduleSelectedRequest()
+    }
+```
 
 For more use cases check:
  - Timers' code [App.kt](common/src/commonMain/kotlin/com/marzec/common/App.kt)
