@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.marzec"
-version = "1.0"
+version = rootProject.version.toString()
 
 repositories {
     jcenter()
