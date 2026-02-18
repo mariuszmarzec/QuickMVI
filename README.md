@@ -17,7 +17,9 @@ repositories {
 //   ...
 dependencies {
     // ...
-   implementation("io.github.mariuszmarzec:quickmvi:1.0.0")
+   implementation("io.github.mariuszmarzec:quickmvi:1.1.0")
+   // compose utils
+   implementation("io.github.mariuszmarzec:quickmvi-compose:1.1.0")
    // ...
 }
 ```
@@ -150,6 +152,37 @@ install delegate in store
      store.doThings()
    ```
 
+## Parent-Child Store Relation
+
+You can create a child store derived from a parent store. This allows for state hoisting and synchronized state management.
+The child store is linked to the parent store via two mappers.
+
+```kotlin
+data class ParentState(val count: Int, val name: String)
+data class ChildState(val count: Int)
+
+val parentStore = Store(scope, ParentState(0, "Parent"))
+
+val childStore = parentStore.getChildStore(
+    scope = childScope,
+    initialState = ChildState(0),
+    parentToChild = { parent -> ChildState(parent.count) },
+    childToParent = { child -> copy(count = child.count) } // 'this' is ParentState
+)
+```
+   
+## QuickMVI - Compose
+### Collecting state
+
+In quickmvi-compose package there is an extension for easy collecting state in compose with initial action could 
+be at screen creation time.
+```kotlin
+    val state: State<TasksScreenState> by store.collectState {
+        store.loadList()
+        store.onScheduleSelectedRequest()
+    }
+```
+
 For more use cases check:
  - Timers' code [App.kt](common/src/commonMain/kotlin/com/marzec/common/App.kt)
  - Test cases code [Store3Test.kt](common/src/commonTest/kotlin/com/marzec/mvi/Store3Test.kt)
@@ -170,4 +203,3 @@ For more use cases check:
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
