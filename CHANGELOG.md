@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+### Added
+- Added parent - child store relation to enable keeping state in one global state
+### Changed
+
 ## 1.1.0
 
 ### Added
