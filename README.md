@@ -151,6 +151,25 @@ install delegate in store
 
      store.doThings()
    ```
+
+## Parent-Child Store Relation
+
+You can create a child store derived from a parent store. This allows for state hoisting and synchronized state management.
+The child store is linked to the parent store via two mappers.
+
+```kotlin
+data class ParentState(val count: Int, val name: String)
+data class ChildState(val count: Int)
+
+val parentStore = Store(scope, ParentState(0, "Parent"))
+
+val childStore = parentStore.getChildStore(
+    scope = childScope,
+    initialState = ChildState(0),
+    parentToChild = { parent -> ChildState(parent.count) },
+    childToParent = { child -> copy(count = child.count) } // 'this' is ParentState
+)
+```
    
 ## QuickMVI - Compose
 ### Collecting state
@@ -184,4 +203,3 @@ For more use cases check:
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-

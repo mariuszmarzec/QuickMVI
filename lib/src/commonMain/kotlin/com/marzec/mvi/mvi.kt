@@ -7,12 +7,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.random.Random
@@ -28,7 +31,7 @@ interface Store4<State : Any> {
 
     val identifier: Any
 
-    var stateInitializer: () -> MutableStateFlow<State>
+    var stateInitializer: () -> StateContainer<State>
 
     var onNewStateCallback: (State) -> Unit
 
@@ -49,17 +52,43 @@ interface Store4<State : Any> {
     fun <Result : Any> run(id: String?, intent: Intent3<State, Result>)
 }
 
+interface StateContainer<State> : StateFlow<State> {
+    suspend fun update(function: (State) -> State)
+}
+
+class StateContainerImpl<State>(
+    private val defaultState: State
+) : StateContainer<State> {
+
+    private val _state = MutableStateFlow(defaultState)
+    private val mutex = Mutex()
+
+    override val replayCache: List<State>
+        get() = _state.replayCache
+    override val value: State
+        get() = _state.value
+
+    override suspend fun collect(collector: FlowCollector<State>): Nothing {
+        _state.collect(collector)
+    }
+
+    override suspend fun update(function: (State) -> State) {
+        mutex.withLock {
+            _state.update(function)
+        }
+    }
+}
 
 open class Store4Impl<State : Any>(
     private val scope: CoroutineScope,
     private val defaultState: State
 ) : Store4<State> {
 
-    override var stateInitializer: () -> MutableStateFlow<State> = { MutableStateFlow(defaultState) }
+    override var stateInitializer: () -> StateContainer<State> = { StateContainerImpl(defaultState) }
 
     override var onNewStateCallback: (State) -> Unit = { }
 
-    private val _state: MutableStateFlow<State> by lazy { stateInitializer() }
+    private val _state: StateContainer<State> by lazy { stateInitializer() }
 
     override val state: StateFlow<State>
         get() = _state
@@ -163,8 +192,9 @@ open class Store4Impl<State : Any>(
             runCancellationAndSideEffectIfNeeded(result, intent, jobId)
         } else {
             withContext(stateThread) {
-                val oldStateValue = _state.value
-                _state.update { intent.reducer(result, oldStateValue) }
+                _state.update { oldStateValue ->
+                    intent.reducer(result, oldStateValue)
+                }
                 onNewState(_state.value)
             }
             intent.sideEffect?.invoke(result, _state.value)
