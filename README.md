@@ -17,9 +17,11 @@ repositories {
 //   ...
 dependencies {
     // ...
-   implementation("io.github.mariuszmarzec:quickmvi:1.1.0")
+   implementation("io.github.mariuszmarzec:quickmvi:1.2.0")
    // compose utils
-   implementation("io.github.mariuszmarzec:quickmvi-compose:1.1.0")
+   implementation("io.github.mariuszmarzec:quickmvi-compose:1.2.0")
+   // navigation utils
+   implementation("io.github.mariuszmarzec:quickmvi-navigation:1.2.0")
    // ...
 }
 ```
@@ -171,6 +173,47 @@ val childStore = parentStore.getChildStore(
 )
 ```
    
+## QuickMVI - Navigation
+
+The `quickmvi-navigation` library provides navigation utilities for QuickMVI, including a store-based navigation state management solution with support for nested flows, result passing, and back-stack manipulation.
+
+### Creating a navigation store
+
+```kotlin
+val navigationStore = navigationStore(
+    scope = scope,
+    stateCache = stateCache,
+    cacheKeyProvider = { "root" },
+    navigationStoreCacheKey = "navigationStore",
+    defaultDestination = HomeScreen,
+    resultCache = resultCache
+)
+```
+
+### Navigating
+
+```kotlin
+navigationStore.next(Destination.Details)
+navigationStore.navigateBack(result)
+```
+
+### Rendering screens
+
+```kotlin
+@Composable
+fun App(navigationStore: NavigationStore) {
+    NavigationHost(
+        navigationStore = navigationStore,
+        router = { destination ->
+            when (destination) {
+                is HomeScreen -> { { _, _ -> HomeScreen() } }
+                is DetailsScreen -> { { _, _ -> DetailsScreen() } }
+            }
+        }
+    )
+}
+```
+
 ## QuickMVI - Compose
 ### Collecting state
 
