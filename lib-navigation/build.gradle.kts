@@ -85,7 +85,7 @@ detekt {
 mavenPublishing {
     coordinates(
         groupId = rootProject.group.toString(),
-        artifactId = "quickmvi-navigation",
+        artifactId = "lib-navigation",
         version = rootProject.version.toString()
     )
 }
