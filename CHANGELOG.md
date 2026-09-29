@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0
+
+### Added
+- Added `quickmvi-navigation` module for store-based navigation state management
+
+### Changed
+- Updated to Kotlin 2.1.20
+- Updated to Gradle 8.11.1
+- Updated AGP to 8.9.0
+
+### Fixed
+
 ## 1.2.0
 
 ### Added

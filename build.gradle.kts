@@ -22,7 +22,7 @@ buildscript {
 
 group = "io.github.mariuszmarzec"
 val postFix = "-SNAPSHOT".takeIf { System.getenv("SNAPSHOT").toBoolean() }.orEmpty()
-version = "1.2.0" + postFix
+version = "1.3.0" + postFix
 
 allprojects {
     repositories {
