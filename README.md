@@ -17,11 +17,11 @@ repositories {
 //   ...
 dependencies {
     // ...
-   implementation("io.github.mariuszmarzec:quickmvi:1.2.0")
+   implementation("io.github.mariuszmarzec:quickmvi:1.3.0")
    // compose utils
-   implementation("io.github.mariuszmarzec:quickmvi-compose:1.2.0")
+   implementation("io.github.mariuszmarzec:quickmvi-compose:1.3.0")
    // navigation utils
-   implementation("io.github.mariuszmarzec:quickmvi-navigation:1.2.0")
+   implementation("io.github.mariuszmarzec:quickmvi-navigation:1.3.0")
    // ...
 }
 ```
