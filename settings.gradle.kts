@@ -16,6 +16,7 @@ include(":desktop")
 include(":common")
 include(":lib")
 include(":lib-compose")
+include(":lib-navigation")
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

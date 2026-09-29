@@ -16,6 +16,7 @@ buildscript {
         classpath(libs.plugin.androidBuild)
         classpath(libs.plugin.detekt)
         classpath(libs.plugin.composeGradle)
+        classpath(libs.plugin.serializationGradle)
     }
 }
 
