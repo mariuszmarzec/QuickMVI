@@ -15,6 +15,7 @@ mockk = "1.13.16"
 mockkCommon = "1.12.5"
 viewModel = "2.0.0"
 junit="4.13.2"
+serialization = "1.8.1"
 jacoco = "0.8.12"
 
 composePlugin = "1.7.3"
@@ -30,15 +31,18 @@ mockkCommon = { module = "io.mockk:mockk-common", version.ref = "mockkCommon" }
 mockkAndroid = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 mockkJvm = { module = "io.mockk:mockk", version.ref = "mockk" }
 junit4 = { module = "junit:junit", version.ref = "junit" }
+serializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 plugin-composeGradle = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "composePlugin" }
 plugin-androidBuild = { module = "com.android.tools.build:gradle", version.ref = "androidGradleplugin" }
 plugin-kotlinGradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 plugin-detekt = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+plugin-serializationGradle = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 
 [plugins]
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "composePlugin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 [bundles]
 
