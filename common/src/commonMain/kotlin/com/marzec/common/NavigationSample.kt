@@ -1,5 +1,10 @@
 package com.marzec.common
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Button
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -7,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.marzec.navigation.Destination
 import com.marzec.navigation.NavigationCacheImpl
 import com.marzec.navigation.NavigationHost
@@ -91,5 +98,13 @@ fun NavigationSample() {
         }
     }
 
-    NavigationHost(navigationStore, router)
+    Column(modifier = Modifier.fillMaxSize()) {
+        Button(
+            modifier = Modifier.padding(16.dp),
+            onClick = { navigationStore.goBack() }) {
+            Text("Back")
+        }
+
+        NavigationHost(navigationStore, router)
+    }
 }
