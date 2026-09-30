@@ -23,6 +23,7 @@ kotlin {
             dependencies {
                 api(projects.lib)
                 api(projects.libCompose)
+                api(projects.libNavigation)
                 api(compose.runtime)
                 api(compose.foundation)
                 api(compose.material)

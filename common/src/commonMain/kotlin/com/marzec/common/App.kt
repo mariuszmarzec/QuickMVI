@@ -65,19 +65,29 @@ fun App(
     scope: CoroutineScope = rememberCoroutineScope(),
     tickerCounter: TickerCounterStore = TickerCounterStore(scope)
 ) {
+    var showNavigationSample by remember { mutableStateOf(false) }
 
-    val store = TimersStore(scope)
-    val textStore = Store(scope, "")
-    val autoCancelStore = Store(scope, 0)
+    if (showNavigationSample) {
+        NavigationSample()
+    } else {
+        val store = TimersStore(scope)
+        val textStore = Store(scope, "")
+        val autoCancelStore = Store(scope, 0)
 
-    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        Timers(store)
-        Spacer(modifier = Modifier.height(16.dp))
-        TickerCounter(tickerCounter)
-        Spacer(modifier = Modifier.height(16.dp))
-        TextFieldExample(textStore)
-        Spacer(modifier = Modifier.height(16.dp))
-        AutoCancelExample(autoCancelStore)
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { showNavigationSample = true }) {
+                Text("Open Navigation Sample")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Timers(store)
+            Spacer(modifier = Modifier.height(16.dp))
+            TickerCounter(tickerCounter)
+            Spacer(modifier = Modifier.height(16.dp))
+            TextFieldExample(textStore)
+            Spacer(modifier = Modifier.height(16.dp))
+            AutoCancelExample(autoCancelStore)
+        }
     }
 }
 
