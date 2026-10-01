@@ -68,7 +68,9 @@ fun App(
     var showNavigationSample by remember { mutableStateOf(false) }
 
     if (showNavigationSample) {
-        NavigationSample()
+        NavigationSample {
+            showNavigationSample = false
+        }
     } else {
         val store = TimersStore(scope)
         val textStore = Store(scope, "")

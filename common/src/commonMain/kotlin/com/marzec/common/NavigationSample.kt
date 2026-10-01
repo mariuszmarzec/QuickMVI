@@ -6,14 +6,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.marzec.mvi.collectState
 import com.marzec.navigation.Destination
 import com.marzec.navigation.NavigationCacheImpl
 import com.marzec.navigation.NavigationHost
@@ -27,7 +25,6 @@ import com.marzec.sample.navigation.screens.b.BStore
 import com.marzec.sample.navigation.screens.b.ScreenB
 import com.marzec.sample.navigation.screens.home.HomeScreen
 import com.marzec.sample.navigation.screens.home.HomeStore
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.random.Random
 
@@ -47,7 +44,7 @@ private fun NavigationState.flows(): Set<String> = backStack.fold(mutableSetOf()
 }
 
 @Composable
-fun NavigationSample() {
+fun NavigationSample(onEmptyBackStack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val stateCache = remember { MemoryNavigationStateCache() }
     val cacheKeyProvider = remember { { Random.nextInt(Int.MAX_VALUE).toString() } }
@@ -77,7 +74,8 @@ fun NavigationSample() {
             navigationStoreCacheKey = navigationStoreCacheKey,
             defaultDestination = NavigationExampleDestination.HomeScreen,
             resultCache = NavigationCacheImpl(),
-            onNewStateCallback = onNewStateCallback
+            onNewStateCallback = onNewStateCallback,
+            onAfterClosed = { onEmptyBackStack() }
         )
     }
 
@@ -101,7 +99,9 @@ fun NavigationSample() {
     Column(modifier = Modifier.fillMaxSize()) {
         Button(
             modifier = Modifier.padding(16.dp),
-            onClick = { navigationStore.goBack() }) {
+            onClick = {
+                navigationStore.goBack()
+            }) {
             Text("Back")
         }
 
