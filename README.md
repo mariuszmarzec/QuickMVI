@@ -115,7 +115,9 @@ The store can also cancel intents explicitly by ID with `cancel(vararg ids: Stri
 
 ### Conditional cancellation
 
-Use `cancelTrigger` when an emitted result should stop the intent before the reducer processes that result. The predicate can inspect both the emitted result and the current state. By default, the side effect is skipped for the result that triggered cancellation; set `runSideEffectAfterCancel = true` to run it anyway.
+Use `cancelTriggeredFlow` when an emitted result should stop the intent before the reducer processes that result. The predicate can inspect both the emitted result and the current state. By default, the side effect is skipped for the result that triggered cancellation; set `runSideEffectAfterCancel = true` to run it anyway.
+
+`cancelTrigger` is kept as a deprecated alias for backward compatibility.
 
 ```kotlin
 fun runUntilThree() = intent<Int>(id = "counter") {

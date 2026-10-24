@@ -263,4 +263,134 @@ class Store3Test {
         values.isEqualTo(10, 31, 62)
         assertEquals(listOf("31", "62"), sideValues)
     }
+
+    @Test
+    fun `cancelTriggeredFlow cancels intent and runs side effect after cancel`() = runStoreTest(0) {
+        var sideEffectResult: Int = -1
+
+        store.intent("intent") {
+            onTrigger {
+                flow {
+                    emit(1)
+                    delay(500)
+                    emit(2)
+                    delay(500)
+                    emit(3)
+                    delay(100)
+                    emit(4)
+                }
+            }
+
+            cancelTriggeredFlow(runSideEffectAfterCancel = true) {
+                resultNonNull() == 2
+            }
+
+            reducer { resultNonNull() }
+
+            sideEffect {
+                if (resultNonNull() == 2) {
+                    sideEffectResult = 2
+                }
+            }
+        }
+
+        scope.advanceTimeBy(2000)
+
+        values.isEqualTo(0, 1)
+        assertEquals(2, sideEffectResult)
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `deprecated cancelTrigger preserves cancellation behavior`() = runStoreTest(0) {
+        var sideEffectResult: Int = -1
+
+        store.intent("intent") {
+            onTrigger {
+                flow {
+                    emit(1)
+                    delay(500)
+                    emit(2)
+                    delay(500)
+                    emit(3)
+                    delay(100)
+                    emit(4)
+                }
+            }
+
+            cancelTrigger(runSideEffectAfterCancel = true) {
+                resultNonNull() == 2
+            }
+
+            reducer { resultNonNull() }
+
+            sideEffect {
+                if (resultNonNull() == 2) {
+                    sideEffectResult = 2
+                }
+            }
+        }
+
+        scope.advanceTimeBy(2000)
+
+        values.isEqualTo(0, 1)
+        assertEquals(2, sideEffectResult)
+    }
+
+    @Test
+    fun `triggerIf false skips the intent`() = runStoreTest(0) {
+        var sideEffectCalled = false
+
+        store.intent {
+            onTrigger { flowOf(1, 2, 3) }
+
+            triggerIf { false }
+
+            reducer { resultNonNull() }
+
+            sideEffect { sideEffectCalled = true }
+        }
+
+        values.isEqualTo(0)
+        assertEquals(false, sideEffectCalled)
+    }
+
+    @Test
+    fun `triggerIf true proceeds normally`() = runStoreTest(0) {
+        store.intent {
+            onTrigger { flowOf(1, 2, 3) }
+
+            triggerIf { true }
+
+            reducer { state + resultNonNull() }
+        }
+
+        values.isEqualTo(0, 1, 3, 6)
+    }
+
+    @Test
+    fun `triggerIf condition selectively proceeds`() = runStoreTest(0) {
+        store.intent {
+            onTrigger { flowOf(1, 2, 3, 4) }
+
+            triggerIf { resultNonNull() % 2 == 0 }
+
+            reducer { state + resultNonNull() }
+        }
+
+        values.isEqualTo(0, 2, 6)
+    }
+
+    @Test
+    fun `triggerIf can inspect state`() = runStoreTest(0) {
+        store.intent {
+            onTrigger { flowOf(1, 2, 3) }
+
+            triggerIf { state < 2 }
+
+            reducer { state + resultNonNull() }
+        }
+
+        values.isEqualTo(0, 1, 3)
+    }
 }

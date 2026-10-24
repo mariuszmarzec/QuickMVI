@@ -375,7 +375,7 @@ fun AutoCancelExample(autoCancelStore: Store4<Int>) {
                     (1..20).asFlow().onEach { delay(50) }
                 }
 
-                cancelTrigger(runSideEffectAfterCancel = true) { resultNonNull() == lastValue }
+                cancelTriggeredFlow(runSideEffectAfterCancel = true) { resultNonNull() == lastValue }
 
                 reducer {
                     resultNonNull()

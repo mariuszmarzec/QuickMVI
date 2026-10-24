@@ -186,7 +186,14 @@ open class Store4Impl<State : Any>(
         result: Result?,
         jobId: String
     ) {
-        val shouldCancel = intent.cancelTrigger?.invoke(result, _state.value) ?: false
+        val context = IntentContext(_state.value, result)
+
+        val shouldSkip = intent.triggerIf?.invoke(context) == false
+        if (shouldSkip) {
+            return
+        }
+
+        val shouldCancel = intent.cancelTriggeredFlow?.invoke(result, _state.value) ?: false
 
         if (shouldCancel) {
             runCancellationAndSideEffectIfNeeded(result, intent, jobId)
@@ -235,9 +242,10 @@ private data class IntentJob<State : Any, Result : Any>(
     val job: Job
 )
 
-data class Intent3<State, Result : Any>(
+data class Intent3<State : Any, Result : Any>(
     val onTrigger: suspend (state: State) -> Flow<Result>? = { _ -> null },
-    val cancelTrigger: (suspend (result: Result?, state: State) -> Boolean)? = null,
+    val cancelTriggeredFlow: (suspend (result: Result?, state: State) -> Boolean)? = null,
+    val triggerIf: (suspend IntentContext<State, Result>.() -> Boolean)? = null,
     val reducer: (result: Result?, state: State) -> State = { _, state -> state },
     val sideEffect: (suspend (result: Result?, state: State) -> Unit)? = null,
     val runSideEffectAfterCancel: Boolean = false
@@ -246,7 +254,8 @@ data class Intent3<State, Result : Any>(
 @Suppress("UNCHECKED_CAST")
 class IntentBuilder<State : Any, Result : Any>(
     private var onTrigger: suspend (state: State) -> Flow<Result>? = { _ -> null },
-    private var cancelTrigger: (suspend (result: Result?, state: State) -> Boolean)? = null,
+    private var cancelTriggeredFlow: (suspend (result: Result?, state: State) -> Boolean)? = null,
+    private var triggerIf: (suspend IntentContext<State, Result>.() -> Boolean)? = null,
     private var reducer: (result: Result?, state: State) -> State = { _, state -> state },
     private var sideEffect: (suspend (result: Result?, state: State) -> Unit)? = null,
     private var runSideEffectAfterCancel: Boolean = false
@@ -261,14 +270,30 @@ class IntentBuilder<State : Any, Result : Any>(
         return this
     }
 
-    fun cancelTrigger(
+    fun cancelTriggeredFlow(
         runSideEffectAfterCancel: Boolean = false,
         func: suspend IntentContext<State, Result>.() -> Boolean = { false }
     ): IntentBuilder<State, Result> {
         this.runSideEffectAfterCancel = runSideEffectAfterCancel
-        cancelTrigger = { result: Result?, state ->
+        cancelTriggeredFlow = { result: Result?, state ->
             IntentContext(state, result).func()
         }
+        return this
+    }
+
+    @Deprecated(
+        message = "Use cancelTriggeredFlow instead. It preserves the exact same behaviour.",
+        replaceWith = ReplaceWith("cancelTriggeredFlow(runSideEffectAfterCancel, func)")
+    )
+    fun cancelTrigger(
+        runSideEffectAfterCancel: Boolean = false,
+        func: suspend IntentContext<State, Result>.() -> Boolean = { false }
+    ): IntentBuilder<State, Result> = cancelTriggeredFlow(runSideEffectAfterCancel, func)
+
+    fun triggerIf(
+        func: suspend IntentContext<State, Result>.() -> Boolean
+    ): IntentBuilder<State, Result> {
+        triggerIf = func
         return this
     }
 
@@ -288,7 +313,8 @@ class IntentBuilder<State : Any, Result : Any>(
 
     fun build(): Intent3<State, Result> = Intent3(
         onTrigger = onTrigger,
-        cancelTrigger = cancelTrigger,
+        cancelTriggeredFlow = cancelTriggeredFlow,
+        triggerIf = triggerIf,
         reducer = reducer,
         sideEffect = sideEffect,
         runSideEffectAfterCancel = runSideEffectAfterCancel
@@ -314,7 +340,8 @@ fun <State : Any, Result : Any> Intent3<State, Result>.rebuild(
     buildFun: IntentBuilder<State, Result>.(Intent3<State, Result>) -> Unit
 ) = IntentBuilder(
     onTrigger = onTrigger,
-    cancelTrigger = cancelTrigger,
+    cancelTriggeredFlow = cancelTriggeredFlow,
+    triggerIf = triggerIf,
     reducer = reducer,
     sideEffect = sideEffect,
     runSideEffectAfterCancel = runSideEffectAfterCancel
@@ -329,8 +356,8 @@ fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.map(
         intent {
             onTrigger { stateMapper(state)?.let { inner.onTrigger(it) } }
 
-            cancelTrigger(inner.runSideEffectAfterCancel) {
-                inner.cancelTrigger?.let { cancelTrigger ->
+            cancelTriggeredFlow(inner.runSideEffectAfterCancel) {
+                inner.cancelTriggeredFlow?.let { cancelTrigger ->
                     stateMapper(state)?.let { cancelTrigger(result, it) } ?: false
                 } ?: false
             }
@@ -361,8 +388,8 @@ fun <OutState : Any, InState : Any, Result : Any> Intent3<InState, Result>.mapIn
         intent {
             onTrigger { stateMapper(state)?.let { inner.onTrigger(it) } }
 
-            cancelTrigger(inner.runSideEffectAfterCancel) {
-                inner.cancelTrigger?.let { cancelTrigger ->
+            cancelTriggeredFlow(inner.runSideEffectAfterCancel) {
+                inner.cancelTriggeredFlow?.let { cancelTrigger ->
                     stateMapper(state)?.let { cancelTrigger(result, it) } ?: false
                 } ?: false
             }

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Added `cancelTriggeredFlow` as the new name for the cancellation-triggered flow.
+- Added `triggerIf`, a suspend condition evaluated in `IntentContext`. When it returns `false` the intent is skipped; when `true` it proceeds normally.
+
+### Changed
+- Renamed the internal cancellation trigger to `cancelTriggeredFlow`.
+
+### Deprecated
+- `cancelTrigger` is deprecated in favor of `cancelTriggeredFlow`; it remains source-compatible and preserves the existing behavior.
+
 ## 1.3.0
 
 ### Added
