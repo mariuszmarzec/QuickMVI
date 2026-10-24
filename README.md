@@ -1,10 +1,6 @@
 # QuickMVI
 
-Small piece of code store class with necessary builders 
-to provide some architecture pattern to manage better 
-state changes for kotlin multiplatform and compose 
-based projects or android 
-[(check ViewModel wrapper in cheat day app](https://github.com/mariuszmarzec/cheatDay).
+QuickMVI is a small state-management library built around stores and intent builders. It helps structure state changes in Kotlin Multiplatform, Jetpack Compose, and Android applications. See the [ViewModel wrapper in the cheatDay app](https://github.com/mariuszmarzec/cheatDay).
 
 ## Quick start
 
@@ -26,11 +22,11 @@ dependencies {
 }
 ```
 
-1. Create store, you, pass default state as argument and scope.
-2. Declare intent action as below, in reducer mutate your current state to get new one and update UI.
-3. In sideEffect action you can declare action which will be fired on every triggered update.
+1. Create a store by passing its initial state and a `CoroutineScope`. Choose a scope whose lifetime matches the store.
+2. Declare an intent. Its `reducer` calculates the next state from the current state and the emitted result.
+3. Use `sideEffect` for work that should run after each processed result, such as logging or navigation.
 ```kotlin
-class TickerCounterStore(scope: CoroutineScope) : Store3<Int>(scope, 0) {
+class TickerCounterStore(scope: CoroutineScope) : Store4Impl<Int>(scope, 0) {
 
     fun bumpCounter() = intent<Int> {
 
@@ -40,9 +36,9 @@ class TickerCounterStore(scope: CoroutineScope) : Store3<Int>(scope, 0) {
     }
 }
 ```
-4. Create your Composable method which takes store as argument
-5. Collect state with `collectState` extension, you can pass optional initial action
-6. Build your UI basing on state.
+4. Create a Composable that receives the store.
+5. Collect state with the `collectState` extension; you can provide an optional initial action.
+6. Render the UI from the collected state.
 ```kotlin
 @Composable
 fun TickerCounter(store: TickerCounterStore) {
@@ -58,6 +54,14 @@ fun TickerCounter(store: TickerCounterStore) {
     }
 }
 ```
+
+## Artifacts
+
+- `quickmvi` — core store and intent APIs.
+- `quickmvi-compose` — Compose state collection helpers, including `collectState`.
+- `quickmvi-navigation` — store-based navigation, including `NavigationStore` and `NavigationHost`.
+
+Add only the artifacts your app uses.
 
 ## Intent action
 In `onTrigger` method you can define action, which will be executed after calling your intent method.
@@ -95,11 +99,9 @@ will be emitted, `sideEffect` action will print value in console.
     }
 ```
 
-Parameter `id` is empty by default. If it is not empty, triggered action will be 
-remembered and if next action with same `id` will be fired and previous one is still 
-pending, it will be killed.
+`id` is optional. When an ID is provided, the store tracks the running intent under that ID. Starting another intent with the same ID cancels the previous one if it is still running. Without an ID, each invocation gets a generated ID and does not replace other intents.
 
-You can also cancel actions with method `fun cancel(vararg ids: String)` as below:
+The store can also cancel intents explicitly by ID with `cancel(vararg ids: String)`, as shown below:
 
 ```kotlin
     fun cancel() = sideEffect {
@@ -110,6 +112,32 @@ You can also cancel actions with method `fun cancel(vararg ids: String)` as belo
         )
     }
 ```
+
+### Conditional cancellation
+
+Use `cancelTrigger` when an emitted result should stop the intent before the reducer processes that result. The predicate can inspect both the emitted result and the current state. By default, the side effect is skipped for the result that triggered cancellation; set `runSideEffectAfterCancel = true` to run it anyway.
+
+```kotlin
+fun runUntilThree() = intent<Int>(id = "counter") {
+    onTrigger {
+        flowOf(1, 2, 3, 4)
+    }
+
+    cancelTrigger(runSideEffectAfterCancel = true) {
+        resultNonNull() == 3
+    }
+
+    reducer {
+        resultNonNull()
+    }
+
+    sideEffect {
+        println("Received $result; state is $state")
+    }
+}
+```
+
+In this example, the intent processes `1` and `2`, then cancels when `3` is emitted. Because cancellation is checked before the reducer, the state remains `2`; the side effect still runs for result `3` because `runSideEffectAfterCancel` is enabled. Result `4` is never processed.
 
 ## Store Delegate
 
