@@ -115,7 +115,9 @@ The store can also cancel intents explicitly by ID with `cancel(vararg ids: Stri
 
 ### Conditional cancellation
 
-Use `cancelTrigger` when an emitted result should stop the intent before the reducer processes that result. The predicate can inspect both the emitted result and the current state. By default, the side effect is skipped for the result that triggered cancellation; set `runSideEffectAfterCancel = true` to run it anyway.
+Use `cancelTriggeredFlow` when an emitted result should stop the intent before the reducer processes that result. The predicate can inspect both the emitted result and the current state. By default, the side effect is skipped for the result that triggered cancellation; set `runSideEffectAfterCancel = true` to run it anyway.
+
+`cancelTrigger` is kept as a deprecated alias for backward compatibility.
 
 ```kotlin
 fun runUntilThree() = intent<Int>(id = "counter") {
@@ -138,6 +140,26 @@ fun runUntilThree() = intent<Int>(id = "counter") {
 ```
 
 In this example, the intent processes `1` and `2`, then cancels when `3` is emitted. Because cancellation is checked before the reducer, the state remains `2`; the side effect still runs for result `3` because `runSideEffectAfterCancel` is enabled. Result `4` is never processed.
+
+### Conditional intent triggering
+
+Use `triggerIf` to gate an intent before it starts. The predicate is evaluated once in `IntentContext` (with `result = null`) right before the trigger flow is started. When it returns `false`, the intent is skipped entirely — the trigger flow, reducer, and side effect never run. When it returns `true` (or `triggerIf` is not set), the intent proceeds normally.
+
+```kotlin
+fun `triggerIf can inspect state at startup`() = runStoreTest(5) {
+    store.intent {
+        onTrigger { flowOf(1, 2, 3) }
+
+        triggerIf { state < 2 }
+
+        reducer { state + resultNonNull() }
+    }
+
+    values.isEqualTo(5)
+}
+```
+
+In this example, the predicate is evaluated once at startup while the state is `5`. Since `5 < 2` is `false`, the intent is skipped before the trigger flow starts and the state stays `5`.
 
 ## Store Delegate
 
