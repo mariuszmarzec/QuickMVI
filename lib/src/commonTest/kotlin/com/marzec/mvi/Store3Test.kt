@@ -338,48 +338,6 @@ class Store3Test {
     }
 
     @Test
-    fun `cancelTriggeredFlow with true predicate prevents onTrigger from running`() = runStoreTest(0) {
-        var onTriggerStarted = false
-
-        store.intent {
-            onTrigger {
-                onTriggerStarted = true
-                flowOf(1, 2, 3)
-            }
-
-            cancelTriggeredFlow { true }
-
-            reducer { resultNonNull() }
-        }
-
-        values.isEqualTo(0)
-        assertEquals(false, onTriggerStarted, "onTrigger must not be invoked for a cancelled intent")
-    }
-
-    @Test
-    fun `cancelTriggeredFlow runs side effect after cancel without starting trigger`() = runStoreTest(0) {
-        var onTriggerStarted = false
-        var sideEffectResult: Int = -1
-
-        store.intent {
-            onTrigger {
-                onTriggerStarted = true
-                flowOf(1)
-            }
-
-            cancelTriggeredFlow(runSideEffectAfterCancel = true) { true }
-
-            reducer { resultNonNull() }
-
-            sideEffect { sideEffectResult = 1 }
-        }
-
-        values.isEqualTo(0)
-        assertEquals(false, onTriggerStarted, "onTrigger must not be invoked for a cancelled intent")
-        assertEquals(1, sideEffectResult, "side effect after cancel must still run")
-    }
-
-    @Test
     fun `triggerIf false skips the intent`() = runStoreTest(0) {
         var onTriggerStarted = false
         var sideEffectCalled = false

@@ -178,11 +178,6 @@ open class Store4Impl<State : Any>(
             return@launch
         }
 
-        if (intent.cancelTriggeredFlow?.invoke(null, _state.value) == true) {
-            runCancellationAndSideEffectIfNeeded(null, intent, jobId)
-            return@launch
-        }
-
         val flow = intent.onTrigger(_state.value) ?: flowOf(null)
 
         flow.collect { result ->
