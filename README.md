@@ -141,6 +141,28 @@ fun runUntilThree() = intent<Int>(id = "counter") {
 
 In this example, the intent processes `1` and `2`, then cancels when `3` is emitted. Because cancellation is checked before the reducer, the state remains `2`; the side effect still runs for result `3` because `runSideEffectAfterCancel` is enabled. Result `4` is never processed.
 
+### Conditional intent triggering
+
+Use `triggerIf` to skip an intent entirely based on a condition evaluated in `IntentContext`. The predicate can inspect both the emitted result and the current state. When it returns `false`, the intent is skipped — no reducer or side effect runs for that result. When it returns `true`, the intent proceeds normally.
+
+```kotlin
+fun runOnlyOnEven() = intent<Int>(id = "counter") {
+    onTrigger {
+        flowOf(1, 2, 3, 4)
+    }
+
+    triggerIf {
+        resultNonNull() % 2 == 0
+    }
+
+    reducer {
+        resultNonNull()
+    }
+}
+```
+
+In this example, results `1` and `3` are skipped because they are odd, so the state progresses only with `2` and `4`.
+
 ## Store Delegate
 
 Logic inside intent could be extracted into separate classes and reuse in more than one store.
