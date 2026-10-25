@@ -381,10 +381,14 @@ class Store3Test {
 
     @Test
     fun `triggerIf false skips the intent`() = runStoreTest(0) {
+        var onTriggerStarted = false
         var sideEffectCalled = false
 
         store.intent {
-            onTrigger { flowOf(1, 2, 3) }
+            onTrigger {
+                onTriggerStarted = true
+                flowOf(1, 2, 3)
+            }
 
             triggerIf { false }
 
@@ -394,6 +398,7 @@ class Store3Test {
         }
 
         values.isEqualTo(0)
+        assertEquals(false, onTriggerStarted)
         assertEquals(false, sideEffectCalled)
     }
 
@@ -411,15 +416,21 @@ class Store3Test {
     }
 
     @Test
-    fun `triggerIf can inspect state`() = runStoreTest(0) {
+    fun `triggerIf can inspect state at startup`() = runStoreTest(5) {
+        var onTriggerStarted = false
+
         store.intent {
-            onTrigger { flowOf(1, 2, 3) }
+            onTrigger {
+                onTriggerStarted = true
+                flowOf(1, 2, 3)
+            }
 
             triggerIf { state < 2 }
 
             reducer { state + resultNonNull() }
         }
 
-        values.isEqualTo(0, 1, 3)
+        values.isEqualTo(5)
+        assertEquals(false, onTriggerStarted)
     }
 }

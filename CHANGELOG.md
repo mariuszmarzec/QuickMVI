@@ -4,7 +4,7 @@
 
 ### Added
 - Added `cancelTriggeredFlow` as the new name for the cancellation-triggered flow.
-- Added `triggerIf`, a suspend condition evaluated in `IntentContext`. When it returns `false` the intent is skipped; when `true` it proceeds normally.
+- Added `triggerIf`, a suspend condition evaluated in `IntentContext` before the trigger flow starts. When it returns `false` the intent is skipped (the trigger flow, reducer, and side effect never run); when `true` it proceeds normally.
 
 ### Changed
 - Renamed the internal cancellation trigger to `cancelTriggeredFlow`.

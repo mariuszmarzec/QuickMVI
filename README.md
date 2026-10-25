@@ -143,10 +143,10 @@ In this example, the intent processes `1` and `2`, then cancels when `3` is emit
 
 ### Conditional intent triggering
 
-Use `triggerIf` to skip an intent entirely based on a condition evaluated in `IntentContext`. The predicate can inspect both the emitted result and the current state. When it returns `false`, the intent is skipped — no reducer or side effect runs for that result. When it returns `true`, the intent proceeds normally.
+Use `triggerIf` to gate an intent before it starts. The predicate is evaluated once in `IntentContext` (with `result = null`) right before the trigger flow is started. When it returns `false`, the intent is skipped entirely — the trigger flow, reducer, and side effect never run. When it returns `true` (or `triggerIf` is not set), the intent proceeds normally.
 
 ```kotlin
-fun `triggerIf can inspect state`() = runStoreTest(0) {
+fun `triggerIf can inspect state at startup`() = runStoreTest(5) {
     store.intent {
         onTrigger { flowOf(1, 2, 3) }
 
@@ -155,11 +155,11 @@ fun `triggerIf can inspect state`() = runStoreTest(0) {
         reducer { state + resultNonNull() }
     }
 
-    values.isEqualTo(0, 1, 3)
+    values.isEqualTo(5)
 }
 ```
 
-In this example, the predicate `state < 2` allows results `1` and `2` to be processed while the state is below `2`. After applying result `1`, the state becomes `1`; after applying result `2`, the state becomes `3`. When result `3` is emitted, the state is already `3`, so the predicate fails and the result is skipped. The final observed states are `0`, `1`, and `3`.
+In this example, the predicate is evaluated once at startup while the state is `5`. Since `5 < 2` is `false`, the intent is skipped before the trigger flow starts and the state stays `5`.
 
 ## Store Delegate
 

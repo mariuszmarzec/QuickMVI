@@ -174,6 +174,10 @@ open class Store4Impl<State : Any>(
         intent: Intent3<State, Result>,
         jobId: String
     ): Job = scope.launch(start = CoroutineStart.LAZY) {
+        if (intent.triggerIf?.invoke(IntentContext(_state.value, null)) == false) {
+            return@launch
+        }
+
         if (intent.cancelTriggeredFlow?.invoke(null, _state.value) == true) {
             runCancellationAndSideEffectIfNeeded(null, intent, jobId)
             return@launch
@@ -191,13 +195,6 @@ open class Store4Impl<State : Any>(
         result: Result?,
         jobId: String
     ) {
-        val context = IntentContext(_state.value, result)
-
-        val shouldSkip = intent.triggerIf?.invoke(context) == false
-        if (shouldSkip) {
-            return
-        }
-
         val shouldCancel = intent.cancelTriggeredFlow?.invoke(result, _state.value) ?: false
 
         if (shouldCancel) {
