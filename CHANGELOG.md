@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.0
 
 ### Added
 - Added `cancelTriggeredFlow` as the new name for the cancellation-triggered flow.
