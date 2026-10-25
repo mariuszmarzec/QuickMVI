@@ -165,13 +165,13 @@ class Store3Test {
             }
 
             cancelTrigger(runSideEffectAfterCancel = true) {
-                resultNonNull() == 2
+                result == 2
             }
 
             reducer { resultNonNull() }
 
             sideEffect {
-                if (resultNonNull() == 2) {
+                if (result == 2) {
                     sideEffectResult = 2
                 }
             }
@@ -282,13 +282,13 @@ class Store3Test {
             }
 
             cancelTriggeredFlow(runSideEffectAfterCancel = true) {
-                resultNonNull() == 2
+                result == 2
             }
 
             reducer { resultNonNull() }
 
             sideEffect {
-                if (resultNonNull() == 2) {
+                if (result == 2) {
                     sideEffectResult = 2
                 }
             }
@@ -319,13 +319,13 @@ class Store3Test {
             }
 
             cancelTrigger(runSideEffectAfterCancel = true) {
-                resultNonNull() == 2
+                result == 2
             }
 
             reducer { resultNonNull() }
 
             sideEffect {
-                if (resultNonNull() == 2) {
+                if (result == 2) {
                     sideEffectResult = 2
                 }
             }
@@ -335,6 +335,48 @@ class Store3Test {
 
         values.isEqualTo(0, 1)
         assertEquals(2, sideEffectResult)
+    }
+
+    @Test
+    fun `cancelTriggeredFlow with true predicate prevents onTrigger from running`() = runStoreTest(0) {
+        var onTriggerStarted = false
+
+        store.intent {
+            onTrigger {
+                onTriggerStarted = true
+                flowOf(1, 2, 3)
+            }
+
+            cancelTriggeredFlow { true }
+
+            reducer { resultNonNull() }
+        }
+
+        values.isEqualTo(0)
+        assertEquals(false, onTriggerStarted, "onTrigger must not be invoked for a cancelled intent")
+    }
+
+    @Test
+    fun `cancelTriggeredFlow runs side effect after cancel without starting trigger`() = runStoreTest(0) {
+        var onTriggerStarted = false
+        var sideEffectResult: Int = -1
+
+        store.intent {
+            onTrigger {
+                onTriggerStarted = true
+                flowOf(1)
+            }
+
+            cancelTriggeredFlow(runSideEffectAfterCancel = true) { true }
+
+            reducer { resultNonNull() }
+
+            sideEffect { sideEffectResult = 1 }
+        }
+
+        values.isEqualTo(0)
+        assertEquals(false, onTriggerStarted, "onTrigger must not be invoked for a cancelled intent")
+        assertEquals(1, sideEffectResult, "side effect after cancel must still run")
     }
 
     @Test

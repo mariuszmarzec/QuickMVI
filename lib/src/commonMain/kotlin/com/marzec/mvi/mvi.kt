@@ -174,6 +174,11 @@ open class Store4Impl<State : Any>(
         intent: Intent3<State, Result>,
         jobId: String
     ): Job = scope.launch(start = CoroutineStart.LAZY) {
+        if (intent.cancelTriggeredFlow?.invoke(null, _state.value) == true) {
+            runCancellationAndSideEffectIfNeeded(null, intent, jobId)
+            return@launch
+        }
+
         val flow = intent.onTrigger(_state.value) ?: flowOf(null)
 
         flow.collect { result ->
