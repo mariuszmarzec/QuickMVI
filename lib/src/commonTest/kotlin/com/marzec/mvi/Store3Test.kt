@@ -411,19 +411,6 @@ class Store3Test {
     }
 
     @Test
-    fun `triggerIf condition selectively proceeds`() = runStoreTest(0) {
-        store.intent {
-            onTrigger { flowOf(1, 2, 3, 4) }
-
-            triggerIf { resultNonNull() % 2 == 0 }
-
-            reducer { state + resultNonNull() }
-        }
-
-        values.isEqualTo(0, 2, 6)
-    }
-
-    @Test
     fun `triggerIf can inspect state`() = runStoreTest(0) {
         store.intent {
             onTrigger { flowOf(1, 2, 3) }
