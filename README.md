@@ -146,22 +146,20 @@ In this example, the intent processes `1` and `2`, then cancels when `3` is emit
 Use `triggerIf` to skip an intent entirely based on a condition evaluated in `IntentContext`. The predicate can inspect both the emitted result and the current state. When it returns `false`, the intent is skipped — no reducer or side effect runs for that result. When it returns `true`, the intent proceeds normally.
 
 ```kotlin
-fun runOnlyOnEven() = intent<Int>(id = "counter") {
-    onTrigger {
-        flowOf(1, 2, 3, 4)
+fun `triggerIf can inspect state`() = runStoreTest(0) {
+    store.intent {
+        onTrigger { flowOf(1, 2, 3) }
+
+        triggerIf { state < 2 }
+
+        reducer { state + resultNonNull() }
     }
 
-    triggerIf {
-        resultNonNull() % 2 == 0
-    }
-
-    reducer {
-        resultNonNull()
-    }
+    values.isEqualTo(0, 1, 3)
 }
 ```
 
-In this example, results `1` and `3` are skipped because they are odd, so the state progresses only with `2` and `4`.
+In this example, the predicate `state < 2` allows results `1` and `2` to be processed while the state is below `2`. After applying result `1`, the state becomes `1`; after applying result `2`, the state becomes `3`. When result `3` is emitted, the state is already `3`, so the predicate fails and the result is skipped. The final observed states are `0`, `1`, and `3`.
 
 ## Store Delegate
 
