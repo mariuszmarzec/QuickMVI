@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fixed duplicate Android namespace: `quickmvi-compose` now uses `com.marzec.quickmvi.compose` instead of reusing `com.marzec.quickmvi`, so consumers no longer need `android.uniquePackageNames=false`.
+
 ## 1.4.0
 
 ### Added
