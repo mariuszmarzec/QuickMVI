@@ -64,7 +64,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.marzec.quickmvi"
+    namespace = "com.marzec.quickmvi.common"
 
     compileSdk = libs.versions.compileSdk.get().toInt()
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")

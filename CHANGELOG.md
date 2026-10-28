@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.4.0
+## 1.4.1
+
+### Fixed
+- Fixed duplicate Android namespace: `quickmvi-compose` now uses `com.marzec.quickmvi.compose` instead of reusing `com.marzec.quickmvi`, so consumers no longer need `android.uniquePackageNames=false`.
+- Audited all Android library modules and confirmed unique namespaces: `lib` → `com.marzec.quickmvi`, `lib-compose` → `com.marzec.quickmvi.compose`, `lib-navigation` → `com.marzec.quickmvi.navigation`, and the internal `common` module → `com.marzec.quickmvi.common` (previously duplicated `lib`).
 
 ### Added
 - Added `cancelTriggeredFlow` as the new name for the cancellation-triggered flow.

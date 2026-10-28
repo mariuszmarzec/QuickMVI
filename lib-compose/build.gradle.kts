@@ -59,7 +59,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.marzec.quickmvi"
+    namespace = "com.marzec.quickmvi.compose"
 
     compileSdk = libs.versions.compileSdk.get().toInt()
     defaultConfig {
